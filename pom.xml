@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  pom.xml is the "recipe" for this project, used by Maven (Java's build tool).
+  It tells Maven:
+    - what the project is called,
+    - which Java version to compile for,
+    - which libraries (dependencies) to download,
+    - how to package and run the app.
+  VS Code's Java extension reads this file and downloads the libraries for you
+  automatically when you open the folder.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+      The "parent" gives us Spring Boot's sensible defaults: matching library
+      versions, compiler settings, and the plugin that runs the app.
+      Changing this one version number upgrades all of Spring Boot at once.
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.1</version>
+        <relativePath/> <!-- look the parent up online, not in a local folder -->
+    </parent>
+
+    <!-- Our project's identity. groupId is usually a reversed domain name. -->
+    <groupId>com.orthodox</groupId>
+    <artifactId>orthodoxapp</artifactId>
+    <version>0.1.0-SNAPSHOT</version> <!-- SNAPSHOT = "still in development" -->
+    <name>orthodoxapp</name>
+    <description>Antiochian Orthodox daily companion app</description>
+
+    <properties>
+        <!-- The Java version we compile for. 17 is the minimum Spring Boot 4 supports,
+             so any newer Java you have installed (21, 25...) will also work. -->
+        <java.version>17</java.version>
+    </properties>
+
+    <!-- Dependencies = the libraries our code uses. Maven downloads them for us. -->
+    <dependencies>
+
+        <!-- Spring Web MVC: lets us write web endpoints (@RestController, @GetMapping),
+             includes the Tomcat web server, Jackson (JSON conversion), and RestClient
+             (for calling other websites such as the Orthocal API). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+
+        <!-- DevTools: automatically restarts the app when you save a Java file,
+             so you can see changes without stopping and starting it yourself.
+             "optional" + "runtime" means it is only used while developing,
+             never in the final production app. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Lets Maven run the app (mvn spring-boot:run) and package it
+                 into a single runnable .jar file (mvn package). -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

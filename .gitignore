@@ -1,0 +1,27 @@
+# .gitignore lists files Git should NOT track or upload to GitHub.
+# These are generated automatically or are specific to your computer.
+
+# Maven's build output (compiled .class files, packaged .jar)
+target/
+
+# VS Code / Eclipse Java language server files (created automatically)
+.classpath
+.project
+.settings/
+.factorypath
+bin/
+
+# IntelliJ IDEA files, in case you ever open the project there
+.idea/
+*.iml
+
+# Operating system clutter
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Secret settings (passwords, API keys) - never commit these
+.env
+application-local.properties

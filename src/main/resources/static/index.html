@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<!--
+  PREVIEW PAGE (temporary)
+  ------------------------
+  Spring Boot automatically serves any file inside src/main/resources/static/
+  as a web page. Because this file is called index.html, it becomes the home
+  page at http://localhost:8080
+
+  Its job: let us SEE the app's progress while we build the backend.
+  It calls our own endpoints (/api/today and /api/day/...), receives JSON,
+  and draws it as cards. Later the real React app replaces this page, but the
+  idea stays the same: the frontend asks the backend for data, then displays it.
+
+  You can open a specific date with an address like:
+      http://localhost:8080/?date=2026-12-25
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Makes the page scale properly on phones -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Orthodox Daily</title>
+
+    <style>
+        /* ---- Colours, defined once as variables so they're easy to change ---- */
+        :root {
+            --bg: #f6f1e7;          /* warm parchment */
+            --card: #fffdf8;
+            --ink: #2b2118;         /* dark brown text */
+            --muted: #7a6a58;
+            --gold: #b08a3e;        /* accents, like icon gilding */
+            --line: #e4d9c4;
+
+            /* One colour per fasting rule (matches FastingRule.java) */
+            --strict: #8b1e1e;      /* deep red */
+            --wine: #9c3d54;        /* wine */
+            --oil: #a8741a;         /* olive-oil amber */
+            --fish: #2d6a8a;        /* sea blue */
+            --meat: #7a5a2e;        /* brown */
+            --free: #2f6b3a;        /* green */
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: Georgia, "Times New Roman", serif;
+            line-height: 1.5;
+        }
+
+        main {
+            max-width: 680px;       /* keeps lines readable on wide screens */
+            margin: 0 auto;
+            padding: 20px 16px 48px;
+        }
+
+        /* ---- Date navigation bar ---- */
+        .date-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 18px;
+            font-family: system-ui, sans-serif;
+        }
+        .date-nav button, .date-nav input {
+            font: inherit;
+            font-size: 0.9rem;
+            padding: 6px 12px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--card);
+            color: var(--ink);
+            cursor: pointer;
+            white-space: nowrap;    /* keep "‹ Prev" on one line on phones */
+        }
+        .date-nav input { min-width: 0; } /* let the date box shrink on narrow screens */
+        .date-nav button:hover { border-color: var(--gold); }
+
+        .date {
+            color: var(--muted);
+            font-size: 0.95rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin: 0;
+        }
+        .subtitle { color: var(--muted); margin: 2px 0 0; font-style: italic; }
+
+        h1 {
+            font-size: 1.9rem;
+            margin: 4px 0 6px;
+            font-weight: normal;
+        }
+
+        .header { margin-bottom: 22px; }
+
+        .feast-badge {
+            display: inline-block;
+            margin-top: 8px;
+            font-family: system-ui, sans-serif;
+            font-size: 0.8rem;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: #f4e8cc;
+            color: #7a5c1c;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+        }
+
+        .card h2 {
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin: 0 0 8px;
+            font-family: system-ui, sans-serif;
+        }
+
+        ul { margin: 0; padding-left: 20px; }
+
+        /* ---- Fasting card ----
+           The JavaScript adds a class named after the rule (e.g. "rule-STRICT"),
+           and each class sets the --rule colour used by the border and title. */
+        .fast { border-left: 6px solid var(--rule, var(--muted)); }
+        .rule-STRICT            { --rule: var(--strict); }
+        .rule-WINE_ONLY         { --rule: var(--wine); }
+        .rule-WINE_AND_OIL      { --rule: var(--oil); }
+        .rule-FISH_WINE_AND_OIL { --rule: var(--fish); }
+        .rule-MEAT_FAST         { --rule: var(--meat); }
+        .rule-FAST_FREE,
+        .rule-NO_FAST           { --rule: var(--free); }
+
+        .fast-title { font-size: 1.15rem; margin: 0; color: var(--rule); }
+        .fast-season { color: var(--muted); margin: 2px 0 10px; }
+
+        /* Food "pills": crossed out = avoid, plain = allowed */
+        .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+        .pill {
+            font-family: system-ui, sans-serif;
+            font-size: 0.8rem;
+            padding: 3px 10px;
+            border-radius: 999px;
+        }
+        .pill.avoid { background: #f3e3e3; color: var(--strict); text-decoration: line-through; }
+        .pill.allowed { background: #e3efe4; color: var(--free); }
+
+        /* ---- Expandable sections (readings, lives) ----
+           <details> is a built-in HTML element that opens and closes on click,
+           no JavaScript needed. <summary> is the always-visible line. */
+        details { border-top: 1px solid var(--line); padding: 10px 0; }
+        details:first-of-type { border-top: none; padding-top: 0; }
+        summary { cursor: pointer; font-size: 1.05rem; }
+        summary .service {
+            font-family: system-ui, sans-serif;
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-left: 6px;
+        }
+        .passage, .life { margin-top: 10px; }
+        .passage p, .life p { margin: 0 0 10px; }
+        .passage sup { color: var(--gold); font-size: 0.7em; margin-right: 2px; }
+
+        .status { color: var(--muted); font-style: italic; }
+        .error { color: var(--strict); }
+
+        footer {
+            margin-top: 28px;
+            font-size: 0.8rem;
+            color: var(--muted);
+            font-family: system-ui, sans-serif;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <!-- Date navigation: previous day, pick a date, next day.
+         (To jump back to today, use the date picker's own "Today" option.) -->
+    <nav class="date-nav">
+        <button id="prev" title="Previous day">‹ Prev</button>
+        <input type="date" id="picker" aria-label="Choose a date">
+        <button id="next" title="Next day">Next ›</button>
+    </nav>
+
+    <!-- These elements start empty; the JavaScript below fills them in. -->
+    <div class="header">
+        <p class="date" id="date"></p>
+        <h1 id="title">Loading…</h1>
+        <div id="subtitle"></div>
+    </div>
+    <div id="content"><p class="status">Asking the backend for the calendar…</p></div>
+
+    <footer>
+        Preview build · Calendar data: <a href="https://orthocal.info">orthocal.info</a>
+        (Greek/Antiochian tradition). Fasting follows strict typikon practice; follow your priest's guidance.
+    </footer>
+</main>
+
+<script>
+    // ===============================================================
+    // SMALL HELPERS
+    // ===============================================================
+
+    // Makes text safe to put into HTML (a "<" in the data can't break the page).
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text ?? '';
+        return div.innerHTML;
+    }
+
+    // Saints' lives arrive as HTML from Orthocal. We never insert outside HTML
+    // as-is: it could contain scripts. This "sanitizer" keeps only a short list
+    // of harmless formatting tags, drops every attribute, and keeps the text of
+    // anything else.
+    const SAFE_TAGS = new Set(['P', 'BR', 'EM', 'I', 'B', 'STRONG', 'BLOCKQUOTE', 'UL', 'OL', 'LI']);
+    function sanitizeHtml(html) {
+        // DOMParser builds a separate, inactive document: nothing in it runs.
+        const doc = new DOMParser().parseFromString(html ?? '', 'text/html');
+
+        // Recursively copy only safe nodes into a clean container.
+        function copySafe(source, target) {
+            for (const node of source.childNodes) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    target.appendChild(document.createTextNode(node.textContent));
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    if (SAFE_TAGS.has(node.tagName)) {
+                        const clean = document.createElement(node.tagName); // no attributes copied
+                        copySafe(node, clean);
+                        target.appendChild(clean);
+                    } else if (!['SCRIPT', 'STYLE', 'IFRAME'].includes(node.tagName)) {
+                        copySafe(node, target); // unknown tag: keep its text only
+                    }
+                }
+            }
+        }
+        const container = document.createElement('div');
+        copySafe(doc.body, container);
+        return container.innerHTML;
+    }
+
+    // Turns a list into <li> items.
+    function listItems(items) {
+        return items.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+    }
+
+    // Date helpers. We work with "YYYY-MM-DD" text, the same format the
+    // date picker and our ?date= address use.
+    function toIso(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    function fromIso(iso) {
+        const [y, m, d] = iso.split('-').map(Number);
+        return new Date(y, m - 1, d); // months start at 0 in JavaScript
+    }
+    function addDays(iso, days) {
+        const date = fromIso(iso);
+        date.setDate(date.getDate() + days);
+        return toIso(date);
+    }
+
+    // ===============================================================
+    // CARD BUILDERS: each returns a piece of HTML for one section.
+    // ===============================================================
+
+    const ALL_FOODS = ['meat', 'fish', 'dairy', 'eggs', 'wine', 'oil'];
+
+    function fastingCard(fasting) {
+        // Show every food: crossed out if avoided today, plain if allowed.
+        // Only shown on fasting days, when it's actually useful.
+        const pills = fasting.abstainFrom.length === 0 ? '' :
+            '<div class="pills">' + ALL_FOODS.map(food =>
+                fasting.abstainFrom.includes(food)
+                    ? `<span class="pill avoid">${food}</span>`
+                    : `<span class="pill allowed">${food}</span>`
+            ).join('') + '</div>';
+
+        return `
+            <section class="card fast rule-${fasting.rule}">
+                <h2>Fasting</h2>
+                <p class="fast-title">${escapeHtml(fasting.label)}</p>
+                <p class="fast-season">${escapeHtml(fasting.season || 'No fasting season')}</p>
+                ${pills}
+            </section>`;
+    }
+
+    function readingsCard(readings) {
+        if (readings.length === 0) return '';
+
+        const items = readings.map(reading => {
+            // Group verses into paragraphs, starting a new <p> where
+            // the verse says paragraphStart is true.
+            let html = '';
+            reading.verses.forEach((verse, index) => {
+                if (index === 0 || verse.paragraphStart) {
+                    html += (index === 0 ? '' : '</p>') + '<p>';
+                }
+                html += `<sup>${verse.number}</sup>${escapeHtml(verse.text)} `;
+            });
+            html += '</p>';
+
+            const label = [reading.service, reading.note].filter(Boolean).join(' · ');
+            return `
+                <details>
+                    <summary>${escapeHtml(reading.reference)}<span class="service">${escapeHtml(label)}</span></summary>
+                    <div class="passage">${html}</div>
+                </details>`;
+        }).join('');
+
+        return `<section class="card"><h2>Scripture Readings</h2>${items}</section>`;
+    }
+
+    function saintsCard(saints) {
+        if (saints.length === 0) return '';
+        return `<section class="card"><h2>Commemorated Today</h2><ul>${listItems(saints)}</ul></section>`;
+    }
+
+    function livesCard(lives) {
+        if (lives.length === 0) return '';
+        const items = lives.map(life => `
+            <details>
+                <summary>${escapeHtml(life.title)}</summary>
+                <div class="life">${sanitizeHtml(life.html)}</div>
+            </details>`).join('');
+        return `<section class="card"><h2>Lives of the Saints</h2>${items}</section>`;
+    }
+
+    // ===============================================================
+    // MAIN: load a date from the backend and draw the page.
+    // ===============================================================
+
+    let currentDate; // the date being shown, as "YYYY-MM-DD"
+
+    async function showDate(iso) {
+        currentDate = iso;
+        document.getElementById('picker').value = iso;
+
+        // Put the date in the address bar (?date=...) so the page can be
+        // bookmarked or refreshed. replaceState changes the URL without reloading.
+        history.replaceState(null, '', '?date=' + iso);
+
+        const content = document.getElementById('content');
+        content.innerHTML = '<p class="status">Loading…</p>';
+
+        try {
+            // Ask OUR backend (CalendarController) for this date.
+            const [y, m, d] = iso.split('-');
+            const response = await fetch(`/api/day/${y}/${Number(m)}/${Number(d)}`);
+
+            if (!response.ok) {
+                // Our ApiExceptionHandler sends errors as JSON with a "detail" message.
+                const problem = await response.json().catch(() => ({}));
+                throw new Error(problem.detail || 'Backend replied with status ' + response.status);
+            }
+
+            const day = await response.json();
+
+            // Ignore the reply if the user already clicked to a different date.
+            if (iso !== currentDate) return;
+
+            document.getElementById('date').textContent = fromIso(day.date).toLocaleDateString('en-US', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+            document.getElementById('title').textContent = day.title;
+
+            // Subtitle line, e.g. "Thursday of the 5th Week · Tone 3", plus a feast badge.
+            const subtitleParts = [...day.subtitles];
+            if (day.tone > 0) subtitleParts.push('Tone ' + day.tone);
+            const feastBadge = day.feast.names.length > 0
+                ? `<span class="feast-badge">✦ ${escapeHtml(day.feast.names.join(', '))}</span>` : '';
+            document.getElementById('subtitle').innerHTML =
+                `<p class="subtitle">${escapeHtml(subtitleParts.join(' · '))}</p>${feastBadge}`;
+
+            content.innerHTML =
+                fastingCard(day.fasting) +
+                readingsCard(day.readings) +
+                saintsCard(day.saints) +
+                livesCard(day.lives);
+        } catch (error) {
+            // If anything fails (backend not running, no internet...), say so.
+            document.getElementById('title').textContent = 'Could not load this day';
+            document.getElementById('subtitle').innerHTML = '';
+            content.innerHTML = `<p class="error">${escapeHtml(error.message)}</p>
+                <p class="status">Is the app running in VS Code, and are you online?</p>`;
+        }
+    }
+
+    // ---- Wire up the buttons ----
+    document.getElementById('prev').addEventListener('click', () => showDate(addDays(currentDate, -1)));
+    document.getElementById('next').addEventListener('click', () => showDate(addDays(currentDate, 1)));
+    document.getElementById('picker').addEventListener('change', event => {
+        if (event.target.value) showDate(event.target.value);
+    });
+
+    // ---- Start: use ?date=... from the address if present, otherwise today ----
+    const requested = new URLSearchParams(location.search).get('date');
+    showDate(/^\d{4}-\d{2}-\d{2}$/.test(requested ?? '') ? requested : toIso(new Date()));
+</script>
+</body>
+</html>
