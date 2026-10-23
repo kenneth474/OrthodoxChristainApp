@@ -1,0 +1,50 @@
+# ci.yml: "Continuous Integration".
+#
+# Every time code is pushed to GitHub (or a pull request is opened), GitHub
+# borrows a fresh Linux computer, downloads this project, and runs Maven to
+# compile the code and run every test. You can watch it in the repo's
+# **Actions** tab. A green ✓ means everything still builds and the tests pass;
+# a red ✗ means something broke, and the log shows which step failed.
+#
+# The badge at the top of README.md shows the result of the latest run.
+
+name: Build and test
+
+# "on" = when this workflow runs.
+on:
+  push:
+    branches: [main]      # every push to main
+  pull_request:           # every pull request, before it's merged
+  workflow_dispatch:      # a "Run workflow" button in the Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest   # the borrowed computer: a fresh Ubuntu Linux machine
+
+    steps:
+      # 1. Download this repository's code onto the machine.
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      # 2. Install Java 17 (the version pom.xml asks for). "cache: maven" saves the
+      #    downloaded libraries between runs, so later runs are much faster.
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      # 3. Compile, run all tests in src/test, and package the app into a .jar.
+      #    -B = "batch mode": plain log output that's easy to read on GitHub.
+      - name: Build and run tests
+        run: mvn -B verify
+
+      # 4. Keep the packaged app so it can be downloaded from the run's page
+      #    (Actions → a run → "Artifacts" at the bottom).
+      - name: Save the packaged app
+        uses: actions/upload-artifact@v4
+        with:
+          name: orthodoxapp-jar
+          path: target/*.jar
+          retention-days: 14

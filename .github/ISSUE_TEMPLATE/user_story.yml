@@ -1,0 +1,28 @@
+# The form GitHub shows when you click "New issue" → "User story".
+name: User story
+description: A new goal for the app, written from the user's point of view
+labels: ["user story"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: Story
+      description: Who wants what, and why?
+      placeholder: As a parishioner, I want to ..., so that ...
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Acceptance criteria
+      description: How will we know it's done? One checkbox per line.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Links, screenshots or anything else useful (optional).

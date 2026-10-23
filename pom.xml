@@ -60,6 +60,15 @@
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
+
+        <!-- Testing tools: JUnit (runs tests) and assertion helpers.
+             "test" scope means they're only used when running tests in
+             src/test, never shipped inside the app. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

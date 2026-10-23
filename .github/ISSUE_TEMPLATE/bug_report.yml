@@ -1,0 +1,25 @@
+# The form GitHub shows when you click "New issue" → "Bug report".
+name: Bug report
+description: Something in the app isn't working as it should
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      placeholder: On 2026-12-25 the fasting card says "Strict fast", but Christmas is fast-free.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to see it
+      placeholder: |
+        1. Open http://localhost:8080/?date=2026-12-25
+        2. Look at the fasting card
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should happen instead?

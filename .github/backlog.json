@@ -1,0 +1,294 @@
+{
+  "labels": [
+    { "name": "user story", "color": "1d76db", "description": "A goal written from the user's point of view" },
+    { "name": "developer task", "color": "5319e7", "description": "Behind-the-scenes work users don't see directly" },
+    { "name": "liturgics", "color": "fbca04", "description": "Calendar, readings, saints, fasting" },
+    { "name": "parishes", "color": "0e8a16", "description": "Find a parish" },
+    { "name": "accounts", "color": "c5def5", "description": "Sign up, log in, profiles" },
+    { "name": "content", "color": "d4c5f9", "description": "News, events, prayers, information pages" },
+    { "name": "platforms", "color": "f9d0c4", "description": "Frontend, mobile apps, notifications, hosting" },
+    { "name": "waiting", "color": "e4e669", "description": "Blocked on someone outside the project" }
+  ],
+  "milestones": [
+    { "title": "Phase 1: Liturgics", "description": "Daily calendar, readings, saints' lives and fasting rules" },
+    { "title": "Phase 2: Find a Parish", "description": "Parish database and 'churches near me' search" },
+    { "title": "Phase 3: Accounts", "description": "Sign up, log in, home parish, bookmarks" },
+    { "title": "Phase 4: Content", "description": "Church news, parish events, prayers, dioceses and ministries" },
+    { "title": "Phase 5: Every platform", "description": "React app, notifications, PWA, Android/iOS, going live" }
+  ],
+  "stories": [
+    {
+      "title": "See today's feast, saints and tone",
+      "story": "As an Orthodox Christian, I want to see today's feast or saint, the week and the tone, so that I know what the Church is celebrating today.",
+      "criteria": [
+        "Shows the day's title, week name and tone",
+        "Shows a badge for major feasts",
+        "Uses the Antiochian (Greek) tradition on the New calendar"
+      ],
+      "labels": ["user story", "liturgics"],
+      "milestone": "Phase 1: Liturgics",
+      "done": true
+    },
+    {
+      "title": "Read the day's scripture readings",
+      "story": "As an Orthodox Christian, I want to read the day's Epistle and Gospel in full, so that I can follow the readings at home or before Liturgy.",
+      "criteria": [
+        "Lists every reading for the day, grouped by service",
+        "Each reading expands to show the full verse text"
+      ],
+      "labels": ["user story", "liturgics"],
+      "milestone": "Phase 1: Liturgics",
+      "done": true
+    },
+    {
+      "title": "Read the lives of the saints",
+      "story": "As an Orthodox Christian, I want to read the lives of the saints commemorated today, so that I can learn from their example.",
+      "criteria": [
+        "Lists the saints commemorated today",
+        "Each saint's life expands to show the full story",
+        "Saints' life text is sanitized before it's displayed"
+      ],
+      "labels": ["user story", "liturgics"],
+      "milestone": "Phase 1: Liturgics",
+      "done": true
+    },
+    {
+      "title": "Know today's fasting rule",
+      "story": "As an Orthodox Christian, I want a clear fasting rule for each day, so that I know which foods to avoid and which are allowed.",
+      "criteria": [
+        "Each day maps to one FastingRule (strict, wine only, wine & oil, fish, meat fast, fast-free, no fast)",
+        "A colour-coded card lists foods to avoid and foods allowed",
+        "Checked against tricky days such as Cheesefare, Lazarus Saturday, Holy Saturday and Christmas Eve",
+        "Automated tests cover every fasting code"
+      ],
+      "labels": ["user story", "liturgics"],
+      "milestone": "Phase 1: Liturgics",
+      "notes": "Orthocal follows strict typikon practice. The app should remind people to follow their priest's guidance.",
+      "done": true
+    },
+    {
+      "title": "Look up any date",
+      "story": "As an Orthodox Christian, I want to move between days and pick any date, so that I can plan for upcoming feasts and fasts.",
+      "criteria": [
+        "Prev and Next buttons move one day at a time",
+        "A date picker jumps to any date",
+        "Links like ?date=2026-12-25 can be shared",
+        "Impossible dates show a clear error message"
+      ],
+      "labels": ["user story", "liturgics"],
+      "milestone": "Phase 1: Liturgics",
+      "done": true
+    },
+    {
+      "title": "Automatic build and tests on every push",
+      "story": "As the developer, I want GitHub to build the app and run the tests every time I push, so that I find out right away if something breaks.",
+      "criteria": [
+        "A GitHub Actions workflow runs `mvn verify` on every push and pull request",
+        "The README shows a build status badge",
+        "The packaged .jar can be downloaded from each run"
+      ],
+      "labels": ["developer task"],
+      "milestone": "Phase 1: Liturgics",
+      "done": true
+    },
+    {
+      "title": "Get permission to use the Archdiocese parish directory",
+      "story": "As the developer, I want the Archdiocese's blessing to use its parish directory, so that the parish finder has complete, accurate data.",
+      "criteria": [
+        "Email sent to archdiocese@antiochian.org (sent 2026-10-22)",
+        "Reply received, with any conditions noted here",
+        "Agreed way to receive the data (export or feed)"
+      ],
+      "labels": ["developer task", "parishes", "waiting"],
+      "milestone": "Phase 2: Find a Parish",
+      "notes": "Until permission comes through, build and test the parish finder with a few parishes entered by hand."
+    },
+    {
+      "title": "Store parishes in a database",
+      "story": "As the developer, I want parishes stored in a database, so that the app can search them quickly.",
+      "criteria": [
+        "Spring Data JPA with H2 while developing (PostgreSQL later)",
+        "A Parish entity: name, address, phone, website, diocese, rite, latitude, longitude",
+        "A few sample parishes loaded at startup, starting with Saints Constantine and Helen in Carrollton, TX"
+      ],
+      "labels": ["developer task", "parishes"],
+      "milestone": "Phase 2: Find a Parish"
+    },
+    {
+      "title": "Find parishes near me",
+      "story": "As someone looking for a church, I want to see the Antiochian parishes nearest to me, so that I can find one to visit.",
+      "criteria": [
+        "Asks the browser for my location (only with my permission)",
+        "Lists parishes sorted by distance, in miles",
+        "Works without location by falling back to a city or ZIP search"
+      ],
+      "labels": ["user story", "parishes"],
+      "milestone": "Phase 2: Find a Parish"
+    },
+    {
+      "title": "Search parishes by city, state or ZIP",
+      "story": "As someone travelling, I want to search for parishes by city, state or ZIP code, so that I can find a church where I'll be.",
+      "criteria": [
+        "A search box accepts a city, state or ZIP",
+        "Results show name, city and distance",
+        "A clear message appears when nothing is found"
+      ],
+      "labels": ["user story", "parishes"],
+      "milestone": "Phase 2: Find a Parish"
+    },
+    {
+      "title": "See parish details and get directions",
+      "story": "As someone looking for a church, I want to see a parish's address, phone and website and get directions, so that I can contact or visit it.",
+      "criteria": [
+        "A details view shows address, phone, website and diocese",
+        "Phone and website are tappable links",
+        "A Directions button opens the address in a maps app"
+      ],
+      "labels": ["user story", "parishes"],
+      "milestone": "Phase 2: Find a Parish"
+    },
+    {
+      "title": "Filter parishes by diocese",
+      "story": "As an Orthodox Christian, I want to filter parishes by diocese, so that I can see the churches in my region.",
+      "criteria": [
+        "A diocese filter lists all dioceses",
+        "Filtering works together with the location and text search"
+      ],
+      "labels": ["user story", "parishes"],
+      "milestone": "Phase 2: Find a Parish"
+    },
+    {
+      "title": "Sign up and log in",
+      "story": "As a parishioner, I want to create an account and log in, so that the app can remember my parish and preferences.",
+      "criteria": [
+        "Sign up with email and password; passwords stored hashed (BCrypt)",
+        "Log in returns a JWT token used for later requests",
+        "Log out, and clear error messages for wrong passwords"
+      ],
+      "labels": ["user story", "accounts"],
+      "milestone": "Phase 3: Accounts"
+    },
+    {
+      "title": "Choose my home parish",
+      "story": "As a parishioner, I want to choose my home parish, so that I see its events and news first.",
+      "criteria": [
+        "Pick a home parish from the parish finder",
+        "The home parish appears on my dashboard"
+      ],
+      "labels": ["user story", "accounts"],
+      "milestone": "Phase 3: Accounts"
+    },
+    {
+      "title": "Bookmark saints and feasts",
+      "story": "As a parishioner, I want to bookmark saints and feasts, so that I can come back to them and be reminded of their days.",
+      "criteria": [
+        "A bookmark button on each saint and feast",
+        "A My Bookmarks page lists them with their dates"
+      ],
+      "labels": ["user story", "accounts"],
+      "milestone": "Phase 3: Accounts"
+    },
+    {
+      "title": "Parish admin role",
+      "story": "As a parish administrator, I want permission to manage my parish's information and events, so that parishioners always see accurate details.",
+      "criteria": [
+        "Roles: member, parish admin, site admin",
+        "Parish admins can edit only their own parish"
+      ],
+      "labels": ["developer task", "accounts"],
+      "milestone": "Phase 3: Accounts"
+    },
+    {
+      "title": "Read church news",
+      "story": "As an Orthodox Christian, I want to read Archdiocese and parish news, so that I stay connected to the life of the Church.",
+      "criteria": [
+        "A news list with title, date and summary",
+        "Admins can create, edit and delete articles"
+      ],
+      "labels": ["user story", "content"],
+      "milestone": "Phase 4: Content"
+    },
+    {
+      "title": "See my parish's events",
+      "story": "As a parishioner, I want to see my parish's upcoming events and schedule changes, so that I don't miss services.",
+      "criteria": [
+        "Upcoming events listed by date",
+        "Parish admins can post updates such as \"Vespers moved to 6:30 PM\""
+      ],
+      "labels": ["user story", "content"],
+      "milestone": "Phase 4: Content"
+    },
+    {
+      "title": "Pray with the prayer library",
+      "story": "As an Orthodox Christian, I want morning, evening and occasional prayers in the app, so that I can pray wherever I am.",
+      "criteria": [
+        "Prayers grouped by time of day and occasion",
+        "Readable on a phone screen",
+        "Only texts we have permission to use"
+      ],
+      "labels": ["user story", "content"],
+      "milestone": "Phase 4: Content"
+    },
+    {
+      "title": "Learn about the dioceses and ministries",
+      "story": "As someone new to the Church, I want pages about the Archdiocese, its dioceses and ministries, so that I understand how it's organised.",
+      "criteria": [
+        "A page for each diocese with its bishop and parishes",
+        "Ministries and About pages"
+      ],
+      "labels": ["user story", "content"],
+      "milestone": "Phase 4: Content"
+    },
+    {
+      "title": "A modern app screen (React)",
+      "story": "As a user, I want a fast, modern app screen, so that the app is pleasant to use on any device.",
+      "criteria": [
+        "A React (Vite) frontend replaces the preview page",
+        "Works well on phone, tablet and desktop screen sizes"
+      ],
+      "labels": ["developer task", "platforms"],
+      "milestone": "Phase 5: Every platform"
+    },
+    {
+      "title": "Fast loading with caching",
+      "story": "As a user, I want each day to load instantly, so that the app feels quick even on a slow connection.",
+      "criteria": [
+        "Each day's calendar data is cached until midnight Central time",
+        "The app still works if Orthocal is briefly offline for cached days"
+      ],
+      "labels": ["developer task", "platforms"],
+      "milestone": "Phase 5: Every platform"
+    },
+    {
+      "title": "Morning summary notification",
+      "story": "As a parishioner, I want a 6 AM summary of the day's feast, fast and parish events, so that I start each day prepared.",
+      "criteria": [
+        "A scheduled job builds the summary at 6:00 AM",
+        "Delivered by email first, then push notifications",
+        "Can be turned off in my settings"
+      ],
+      "labels": ["user story", "platforms"],
+      "milestone": "Phase 5: Every platform"
+    },
+    {
+      "title": "Install the app on my phone or computer",
+      "story": "As a user, I want to install the app on my home screen, so that I can open it like any other app.",
+      "criteria": [
+        "The web app is an installable PWA",
+        "Android and iOS apps built with Capacitor"
+      ],
+      "labels": ["user story", "platforms"],
+      "milestone": "Phase 5: Every platform"
+    },
+    {
+      "title": "Put the app online",
+      "story": "As a user, I want to open the app from anywhere, so that I don't need the developer's computer to be running.",
+      "criteria": [
+        "Backend, database and frontend hosted online",
+        "A public web address for the app"
+      ],
+      "labels": ["developer task", "platforms"],
+      "milestone": "Phase 5: Every platform"
+    }
+  ]
+}

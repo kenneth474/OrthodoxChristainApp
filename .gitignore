@@ -11,6 +11,12 @@ target/
 .factorypath
 bin/
 
+# VS Code settings for this computer only
+.vscode/
+
+# Personal study notes (kept on this computer, not uploaded)
+STUDY_NOTES.md
+
 # IntelliJ IDEA files, in case you ever open the project there
 .idea/
 *.iml

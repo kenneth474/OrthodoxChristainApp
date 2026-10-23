@@ -1,5 +1,7 @@
 # Orthodox Daily: An Antiochian Orthodox Companion App
 
+[![Build and test](https://github.com/kenneth474/OrthodoxChristainApp/actions/workflows/ci.yml/badge.svg)](https://github.com/kenneth474/OrthodoxChristainApp/actions/workflows/ci.yml)
+
 A cross-platform app for Antiochian Orthodox Christians, inspired by the
 features of [antiochian.org](https://www.antiochian.org): each day's **fasting
 rule, scripture readings, saints and their lives**, a **parish finder** for
@@ -115,6 +117,13 @@ OrthodoxChristianApp/
 ├── pom.xml                          # Maven "recipe": Spring Boot version, libraries, Java version
 ├── README.md                        # This file
 ├── .gitignore                       # Files Git should not track (build output, secrets)
+├── .github/
+│   ├── workflows/ci.yml             # GitHub Actions: build and test on every push
+│   ├── workflows/backlog.yml        # GitHub Actions: turns backlog.json into Issues
+│   ├── backlog.json                 # The app's goals, written as user stories
+│   └── ISSUE_TEMPLATE/              # Forms for new user stories and bug reports
+├── src/test/java/com/orthodox/orthodoxapp/
+│   └── FastingRuleTest.java         # Automated tests for the fasting rules
 └── src/main/
     ├── java/com/orthodox/orthodoxapp/
     │   ├── OrthodoxappApplication.java  # Starting point: main() boots Spring
@@ -197,12 +206,27 @@ The app is set up so you can watch changes appear while it runs:
 
 ## Roadmap
 
+### How we track work
+
+- **User stories:** every goal is a GitHub [Issue](https://github.com/kenneth474/OrthodoxChristainApp/issues),
+  written as *"As a …, I want …, so that …"* with a checklist of acceptance criteria.
+  Each one has a phase [milestone](https://github.com/kenneth474/OrthodoxChristainApp/milestones)
+  and labels such as `parishes` or `accounts`.
+- **Board:** the [Projects](https://github.com/kenneth474/OrthodoxChristainApp/projects) tab shows
+  every story in **Todo → In Progress → Done** columns.
+- **Done means done:** put `Closes #12` (the Issue's number) in a commit message.
+  When it's pushed, GitHub closes Issue #12 and the board moves it to **Done**.
+- **Actions:** every push runs the build and tests ([ci.yml](.github/workflows/ci.yml)).
+  New stories added to [backlog.json](.github/backlog.json) become Issues automatically
+  ([backlog.yml](.github/workflows/backlog.yml)), or you can use **New issue → User story**.
+
 **Phase 1: Liturgics** *(antiochian.org: Liturgics, Spiritual Readings)*
 - [x] Spring Boot project and `/api/today` endpoint (Greek/Antiochian, New calendar)
 - [x] Preview page showing fast, readings and saints
 - [x] `FastingRule` enum and a controller → service → client layer structure
 - [x] Any-date lookups (`/api/day/2026/12/25`), full scripture text, saints' lives
 - [x] Error handling (Orthocal offline, slow network, impossible dates)
+- [x] Automated tests and GitHub Actions build on every push
 
 **Phase 2: Find a Parish** *(antiochian.org: Parishes)*
 - [ ] Database with Spring Data JPA (H2 to start, PostgreSQL later)

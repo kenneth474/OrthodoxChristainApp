@@ -1,0 +1,96 @@
+# backlog.yml: turns .github/backlog.json into GitHub Issues.
+#
+# backlog.json lists the app's goals as user stories ("As a ..., I want ...,
+# so that ..."). When that file changes on main, this workflow:
+#   - creates any labels and milestones (one milestone per roadmap phase),
+#   - creates an Issue for every story that doesn't have one yet,
+#   - closes the Issues for stories already marked "done".
+# Stories that already have an Issue are left alone, so it's safe to re-run.
+# After an Issue exists, the Issue is the place to edit it, not this file.
+#
+# Issues close themselves when a commit message says "Closes #12" (the Issue's
+# number). The Projects board then moves the card to Done automatically.
+
+name: Sync backlog to Issues
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/backlog.json']   # only when the backlog file changes
+  workflow_dispatch:                  # or by hand from the Actions tab
+
+# The workflow's built-in token may create and close Issues, nothing more.
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # github-script runs a small JavaScript program with a ready-made GitHub
+      # API client called "github".
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const backlog = JSON.parse(fs.readFileSync('.github/backlog.json', 'utf8'));
+            const repo = { owner: context.repo.owner, repo: context.repo.repo };
+
+            // 1. Labels: create the ones that don't exist yet.
+            const existingLabels = (await github.paginate(github.rest.issues.listLabelsForRepo, repo))
+              .map(l => l.name);
+            for (const label of backlog.labels) {
+              if (!existingLabels.includes(label.name)) {
+                await github.rest.issues.createLabel({ ...repo, ...label });
+                core.info(`Created label: ${label.name}`);
+              }
+            }
+
+            // 2. Milestones: one per roadmap phase.
+            const milestones = await github.paginate(github.rest.issues.listMilestones, { ...repo, state: 'all' });
+            const milestoneNumber = {};
+            for (const m of milestones) milestoneNumber[m.title] = m.number;
+            for (const m of backlog.milestones) {
+              if (!milestoneNumber[m.title]) {
+                const created = await github.rest.issues.createMilestone({ ...repo, ...m });
+                milestoneNumber[m.title] = created.data.number;
+                core.info(`Created milestone: ${m.title}`);
+              }
+            }
+
+            // 3. Issues: one per story, matched by title.
+            const issues = await github.paginate(github.rest.issues.listForRepo, { ...repo, state: 'all' });
+            const existingTitles = issues.filter(i => !i.pull_request).map(i => i.title);
+            for (const story of backlog.stories) {
+              if (existingTitles.includes(story.title)) continue;
+
+              const body = [
+                `**${story.story}**`,
+                '',
+                '### Acceptance criteria',
+                ...story.criteria.map(c => `- [${story.done ? 'x' : ' '}] ${c}`),
+                ...(story.notes ? ['', '### Notes', story.notes] : []),
+              ].join('\n');
+
+              const created = await github.rest.issues.create({
+                ...repo,
+                title: story.title,
+                body,
+                labels: story.labels,
+                milestone: milestoneNumber[story.milestone],
+              });
+              core.info(`Created #${created.data.number}: ${story.title}`);
+
+              if (story.done) {
+                await github.rest.issues.update({
+                  ...repo,
+                  issue_number: created.data.number,
+                  state: 'closed',
+                  state_reason: 'completed',
+                });
+                core.info(`  closed (already done)`);
+              }
+            }
