@@ -283,6 +283,41 @@
       "notes": "Until this is set up, codes are printed in the VS Code terminal (development mode). Twilio charges per text, and US numbers need a one-time registration (A2P 10DLC)."
     },
     {
+      "title": "Customize my profile",
+      "story": "As a parishioner, I want to add a profile photo, my patron saint, my name day and my home parish, so that the app feels like mine.",
+      "criteria": [
+        "Upload a JPEG or PNG photo, cropped to a square; remove it any time",
+        "Photos are re-saved by the server, which strips hidden data such as GPS location",
+        "Save my patron saint, name day and home parish",
+        "On my name day, the home page wishes me a happy name day"
+      ],
+      "labels": ["user story", "accounts"],
+      "milestone": "Phase 3: Accounts"
+    },
+    {
+      "title": "Choose text size and dark mode",
+      "story": "As a parishioner, I want to choose a larger text size and a dark theme, so that the app is comfortable to read, including in church or at night.",
+      "criteria": [
+        "Text size: Normal, Large or Larger",
+        "Theme: match my device, Light or Dark",
+        "Settings are saved to my account and applied on every page"
+      ],
+      "labels": ["user story", "accounts"],
+      "milestone": "Phase 3: Accounts"
+    },
+    {
+      "title": "Read and download the day's service texts",
+      "story": "As a chanter or parishioner, I want to read the day's service texts (Vespers, Orthros, Divine Liturgy) in the app or download them as PDFs, so that I can follow or prepare for the services.",
+      "criteria": [
+        "Each day links to the Archdiocese's Online Liturgical Guide",
+        "Permission from the Archdiocese's Department of Liturgics to show its texts in the app",
+        "With permission: the day's PDFs open in an in-app viewer, with a Download button"
+      ],
+      "labels": ["user story", "liturgics", "waiting"],
+      "milestone": "Phase 4: Content",
+      "notes": "The Archdiocese publishes these texts at antiochian.org/liturgicday. The texts are its own approved translations, and the list of each day's files comes from a private, login-protected feed, so we link to the guide until we have permission."
+    },
+    {
       "title": "Read church news",
       "story": "As an Orthodox Christian, I want to read Archdiocese and parish news, so that I stay connected to the life of the Church.",
       "criteria": [
