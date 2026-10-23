@@ -20,6 +20,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class OrthodoxappApplication {
 
     public static void main(String[] args) {
+        // Online, the host gives us the database's address as DATABASE_URL;
+        // turn it into settings Spring Boot understands (see DatabaseUrl.java).
+        DatabaseUrl.useIfPresent();
+
         // Hand control to Spring Boot. "args" are any command-line options.
         SpringApplication.run(OrthodoxappApplication.class, args);
     }

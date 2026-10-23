@@ -66,10 +66,20 @@
         </dependency>
 
         <!-- H2: a small database that runs inside the app and stores its data
-             in the data/ folder. Perfect while developing; PostgreSQL later. -->
+             in the data/ folder. Used on your computer and in the tests. -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- PostgreSQL driver: lets the app talk to a PostgreSQL database, the
+             one it uses online (see application-prod.properties). "runtime"
+             means our code never mentions it directly; Spring picks it up
+             from the jdbc:postgresql:// address. -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
