@@ -199,6 +199,90 @@
       "milestone": "Phase 3: Accounts"
     },
     {
+      "title": "Sign in with Google",
+      "story": "As a parishioner, I want to sign in with my Google account, so that I don't need another password.",
+      "criteria": [
+        "A \"Continue with Google\" button on the sign-in page",
+        "The first Google sign-in creates an account from my verified Google email and name",
+        "If an account with the same email already exists, Google is linked to it",
+        "The button only appears once Google keys are set in secrets.properties"
+      ],
+      "labels": ["user story", "accounts"],
+      "milestone": "Phase 3: Accounts"
+    },
+    {
+      "title": "Sign in with Apple",
+      "story": "As an iPhone user, I want to sign in with my Apple ID, so that I can sign in quickly and keep my email private if I choose.",
+      "criteria": [
+        "A \"Continue with Apple\" button on the sign-in page",
+        "Works with Apple's \"Hide My Email\" addresses",
+        "The button only appears once Apple keys are set in secrets.properties",
+        "Tested end to end once the app is online over HTTPS"
+      ],
+      "labels": ["user story", "accounts"],
+      "milestone": "Phase 3: Accounts",
+      "notes": "Apple requires a paid Apple Developer Program membership ($99/year) and a real HTTPS web address (it doesn't allow localhost), so this can only be tested after the app is online (#25). The App Store also requires Sign in with Apple in any iPhone app that offers Google sign-in."
+    },
+    {
+      "title": "Strong password rules",
+      "story": "As a parishioner, I want the app to require a strong password, so that my account is hard to break into.",
+      "criteria": [
+        "At least 12 characters, with an uppercase letter, a lowercase letter, a number and a symbol",
+        "Rejects passwords containing my email name, or a common word with numbers added (like \"Password2026!\")",
+        "The sign-up page shows a live checklist of the rules as I type",
+        "Passwords are stored only as BCrypt hashes, never as plain text",
+        "5 wrong passwords in a row lock the account for 15 minutes"
+      ],
+      "labels": ["user story", "accounts"],
+      "milestone": "Phase 3: Accounts"
+    },
+    {
+      "title": "Add my phone number",
+      "story": "As a parishioner, I want to optionally add my phone number, so that I can receive sign-in codes by text message.",
+      "criteria": [
+        "Phone number is optional at sign-up and can be added, changed or removed later",
+        "US numbers can be typed in any common format; other countries start with +",
+        "The number is confirmed with a 6-digit code sent by text before it can be used"
+      ],
+      "labels": ["user story", "accounts"],
+      "milestone": "Phase 3: Accounts"
+    },
+    {
+      "title": "Two-step verification by email or text",
+      "story": "As a parishioner, I want to turn on two-step verification, so that someone who learns my password still can't get into my account.",
+      "criteria": [
+        "Choose Off, Email or Text message on my account page",
+        "Only a verified email or phone number can be chosen",
+        "After the correct password, sign-in asks for a 6-digit code sent to that email or phone",
+        "Codes expire after 10 minutes, allow 5 tries, and can be re-sent after 30 seconds"
+      ],
+      "labels": ["user story", "accounts"],
+      "milestone": "Phase 3: Accounts"
+    },
+    {
+      "title": "Reset a forgotten password",
+      "story": "As a parishioner, I want to reset my password if I forget it, so that I don't lose my account.",
+      "criteria": [
+        "A \"Forgot password?\" link on the sign-in page",
+        "A reset code or link is sent to my verified email",
+        "The new password must follow the strong password rules"
+      ],
+      "labels": ["user story", "accounts"],
+      "milestone": "Phase 3: Accounts"
+    },
+    {
+      "title": "Send real emails and text messages",
+      "story": "As the developer, I want codes delivered by real email and text messages, so that people outside my computer can use two-step verification.",
+      "criteria": [
+        "Email through an SMTP service (Gmail for testing, a sending service when live)",
+        "Text messages through Twilio",
+        "Settings kept in secrets.properties, never committed to GitHub"
+      ],
+      "labels": ["developer task", "accounts"],
+      "milestone": "Phase 3: Accounts",
+      "notes": "Until this is set up, codes are printed in the VS Code terminal (development mode). Twilio charges per text, and US numbers need a one-time registration (A2P 10DLC)."
+    },
+    {
       "title": "Read church news",
       "story": "As an Orthodox Christian, I want to read Archdiocese and parish news, so that I stay connected to the life of the Church.",
       "criteria": [
