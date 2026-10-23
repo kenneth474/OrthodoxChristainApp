@@ -1,8 +1,9 @@
 # ci.yml: "Continuous Integration".
 #
 # Every time code is pushed to GitHub (or a pull request is opened), GitHub
-# borrows a fresh Linux computer, downloads this project, and runs Maven to
-# compile the code and run every test. You can watch it in the repo's
+# borrows a fresh Linux computer, downloads this project, tests and builds the
+# React app (frontend/), then runs Maven to compile the Java code, run every
+# test, and package the app with the React app inside. You can watch it in the repo's
 # **Actions** tab. A green ✓ means everything still builds and the tests pass;
 # a red ✗ means something broke, and the log shows which step failed.
 #
@@ -35,12 +36,31 @@ jobs:
           java-version: '17'
           cache: maven
 
-      # 3. Compile, run all tests in src/test, and package the app into a .jar.
+      # 3. Install Node.js 24, which runs the React app's tools. "cache: npm"
+      #    saves the downloaded packages between runs.
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # 4. The React app: install its packages exactly as listed in
+      #    package-lock.json (npm ci), run its tests, then build it. The build
+      #    lands in src/main/resources/static, so the next step packs it into the .jar.
+      - name: Test and build the React app
+        working-directory: frontend
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      # 5. Compile, run all tests in src/test, and package the app into a .jar.
       #    -B = "batch mode": plain log output that's easy to read on GitHub.
       - name: Build and run tests
         run: mvn -B verify
 
-      # 4. Keep the packaged app so it can be downloaded from the run's page
+      # 6. Keep the packaged app so it can be downloaded from the run's page
       #    (Actions → a run → "Artifacts" at the bottom).
       - name: Save the packaged app
         uses: actions/upload-artifact@v4
