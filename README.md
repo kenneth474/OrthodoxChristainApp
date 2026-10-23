@@ -12,7 +12,9 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 > date, with full scripture text, saints' lives and a fasting rule engine.
 > Accounts work too: email and password with strong password rules, an
 > optional phone number, two-step verification by email or text, and
-> Google/Apple sign-in ready to switch on. See the [Roadmap](#roadmap) below.
+> Google/Apple sign-in ready to switch on. It's packaged to run online on
+> Render (see [Putting the App Online](#putting-the-app-online)). See the
+> [Roadmap](#roadmap) below.
 >
 > This is an independent project, not an official app of the Antiochian
 > Orthodox Christian Archdiocese of North America.
@@ -59,7 +61,9 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 | **JSON** | Jackson | Converts JSON to and from Java objects |
 | **Build tool** | Maven (with the Maven Wrapper, `mvnw`) | Downloads libraries, compiles, tests, packages the app |
 | **Calendar data** | [Orthocal API](https://orthocal.info/api/) | Free Orthodox calendar API with a Greek/Antiochian tradition setting |
-| **Database** | H2 (stored in `data/`) + Spring Data JPA; PostgreSQL when live | User accounts now; parishes, events, news, bookmarks next |
+| **Database** | Spring Data JPA with H2 on your computer (stored in `data/`) and PostgreSQL online | User accounts now; parishes, events, news, bookmarks next |
+| **Packaging** | Docker (a multi-stage `Dockerfile`) | One container with the React app, the backend and Java, runnable on any host |
+| **Hosting** | [Render](https://render.com) (free plan to start), set up by `render.yaml` | Builds and deploys from GitHub after the checks pass; free HTTPS address |
 | **Security** | Spring Security: sessions, CSRF protection, BCrypt password hashing | Sign-in, two-step verification, protected account pages |
 | **Google / Apple sign-in** | OAuth 2.0 / OpenID Connect (Spring Security OAuth2 Client) | Sign in without a new password |
 | **Email & text messages** | Spring Mail (SMTP) and Twilio | Verification codes; printed in the terminal while developing |
@@ -159,6 +163,9 @@ OrthodoxChristianApp/
 ├── secrets.example.properties       # Template for secrets.properties (keys; never committed)
 ├── README.md                        # This file
 ├── .gitignore                       # Files Git should not track (build output, secrets, data/)
+├── Dockerfile                       # Packs the whole app into a container image (how it runs online)
+├── .dockerignore                    # Files the Dockerfile must not copy in (secrets, local builds)
+├── render.yaml                      # Render "Blueprint": the online web app and its PostgreSQL database
 ├── frontend/                        # The React app (all the screens); see frontend/README.md
 │   ├── src/pages/                   # Home, Bible, Prayers, Profile, Sign-in
 │   ├── src/components/              # Tab bar, reading-aloud player, shared pieces
@@ -166,7 +173,8 @@ OrthodoxChristianApp/
 │   ├── public/data/prayers.json     # The prayers themselves (edit this to add or fix a prayer)
 │   └── public/icons/                # The app icon (gold Orthodox cross)
 ├── .github/
-│   ├── workflows/ci.yml             # GitHub Actions: test and build the React app and the backend on every push
+│   ├── workflows/ci.yml             # GitHub Actions: test and build everything on every push, then try the container
+│   ├── scripts/smoke-test.sh        # Quick checks of a running container (used by ci.yml)
 │   ├── workflows/backlog.yml        # GitHub Actions: turns backlog.json into Issues
 │   ├── backlog.json                 # The app's goals, written as user stories
 │   └── ISSUE_TEMPLATE/              # Forms for new user stories and bug reports
@@ -176,6 +184,7 @@ OrthodoxChristianApp/
 └── src/main/
     ├── java/com/orthodox/orthodoxapp/
     │   ├── OrthodoxappApplication.java  # Starting point: main() boots Spring
+    │   ├── DatabaseUrl.java             # Online: turns the host's DATABASE_URL into database settings
     │   ├── CalendarController.java      # Web endpoints: /api/today, /api/day/{y}/{m}/{d}
     │   ├── CalendarService.java         # Business logic: converts Orthocal data, applies rules
     │   ├── OrthocalClient.java          # Calls the Orthocal API (with timeouts)
@@ -202,6 +211,7 @@ OrthodoxChristianApp/
     │   └── notify/                      # Sending emails and texts (or printing them while developing)
     └── resources/
         ├── application.properties       # App settings (port, database, secrets file)
+        ├── application-prod.properties  # Extra settings used only online (PostgreSQL, https)
         ├── bible/                       # The Bible text (public domain); see its README.md
         └── static/                      # The BUILT React app (made by "npm run build"; not in Git)
 ```
@@ -332,10 +342,110 @@ Your phone must be on the **same Wi-Fi** as your computer.
 
 These addresses use `http`, not `https`. That's fine for trying things out;
 features that need `https` (location for "parishes near me", Google sign-in on
-the phone, working offline) will come when the app goes online (Issue #25).
+the phone, working offline) work on the online address instead (see
+[Putting the App Online](#putting-the-app-online)).
 
 **Tip:** Commit after each working step (Source Control → type a message →
 ✓ Commit → Sync). Your GitHub history then becomes a timeline of the build.
+
+---
+
+## Putting the App Online
+
+The app runs online on [Render](https://render.com), which builds it straight
+from this GitHub repository. Three files make that work:
+
+| File | What it does |
+|---|---|
+| `Dockerfile` | Packs the React app, the backend and Java into one container image |
+| `render.yaml` | Tells Render what to create: the web app (from the `Dockerfile`) and a PostgreSQL database |
+| `src/main/resources/application-prod.properties` | Settings used only online: PostgreSQL instead of H2, https, smaller memory limits |
+
+Online, accounts live in **PostgreSQL** instead of H2, because files inside
+the app's container are wiped on every restart and update. Render gives the
+app the database's address as `DATABASE_URL`, and `DatabaseUrl.java` turns it
+into the settings Spring Boot needs.
+
+### The first time (about 15 minutes)
+
+1. Go to [render.com](https://render.com) and **sign up with GitHub** (the
+   `kenneth474` account). When GitHub asks which repositories Render may see,
+   choose **OrthodoxChristianApp**.
+2. In Render's dashboard: **New** → **Blueprint**, then pick
+   **OrthodoxChristianApp**.
+3. Render reads `render.yaml` and shows what it will create:
+   **orthodox-daily** (web service, Free) and **orthodox-daily-db**
+   (PostgreSQL, Free). Name the Blueprint (e.g. *Orthodox Daily*) and click
+   **Deploy Blueprint**.
+4. Wait for the first build, about 5 to 10 minutes. You can watch it under
+   orthodox-daily → **Logs**.
+5. When it says **Live**, open the address at the top of the page, for
+   example `https://orthodox-daily.onrender.com` (Render adds a few letters if
+   that name is taken).
+6. On your iPhone: open that address in Safari → **Share** → **Add to Home
+   Screen**.
+
+Never put card details, passwords or keys in a file in this project. Anything
+like that is typed only into Render's own pages.
+
+### After that, updates are automatic
+
+Every push to `main` runs the **Build and test** checks on GitHub. When they
+pass, Render builds and starts the new version by itself
+(`autoDeployTrigger: checksPass` in `render.yaml`). If a check fails, the
+working version stays online.
+
+The second check, **Container (as it runs online)**, builds the container the
+same way Render does, starts it with a real PostgreSQL database on a server
+as small as Render's free one, and tries it out
+(`.github/scripts/smoke-test.sh`). Its log also says how long the app took to
+start.
+
+### What the free plan means
+
+| Limit | What happens | When it matters |
+|---|---|---|
+| [Sleeps after 15 minutes](https://render.com/docs/free) with no visitors | The next visitor waits up to about a minute while it wakes | Upgrade the web service to **Starter** (about $7/month) for always-on |
+| [The free database expires after 30 days](https://render.com/docs/free) | Render emails a warning; after a 14-day grace period the database, with every account in it, is deleted | Upgrade the database (about $6/month) **before** people rely on their accounts |
+| [Email can't be sent](https://render.com/changelog/free-web-services-will-no-longer-allow-outbound-traffic-to-smtp-ports) | Free services can't reach email servers (SMTP), so verification codes are only written to Render's **Logs** | Upgrade to Starter, or send email through a service's web API (Issue #32) |
+
+Prices change; check [render.com/pricing](https://render.com/pricing). To
+upgrade: the service or database in Render → **Settings** → **Instance Type**.
+
+### Secret settings online
+
+`secrets.properties` stays on your computer: it never goes to GitHub or
+Render. Online, the same settings are **environment variables**: in Render,
+open **orthodox-daily** → **Environment** → **Add Environment Variable**, then
+save (the app restarts with them). The name is the setting in capitals, with
+`_` instead of `.` and no `-`:
+
+| In `secrets.properties` | Render environment variable |
+|---|---|
+| `app.auth.google.client-id` | `APP_AUTH_GOOGLE_CLIENTID` |
+| `app.auth.google.client-secret` | `APP_AUTH_GOOGLE_CLIENTSECRET` |
+| `spring.mail.host`, `spring.mail.port` | `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT` |
+| `spring.mail.username`, `spring.mail.password` | `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` |
+| `spring.mail.properties.mail.smtp.auth` | `SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH` |
+| `spring.mail.properties.mail.smtp.starttls.enable` | `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE` |
+
+For Google sign-in online, also add
+`https://orthodox-daily.onrender.com/login/oauth2/code/google` (your real
+address) as an **Authorized redirect URI** in Google Cloud Console, next to the
+`localhost` one.
+
+### Moving to another host later
+
+Nothing in the app is tied to Render except `render.yaml`. Any host that runs
+containers (Railway, Fly.io, Google Cloud Run, your own server) can build the
+same `Dockerfile`. It needs:
+
+- a PostgreSQL database, with its address in a `DATABASE_URL` environment
+  variable (`postgresql://USER:PASSWORD@HOST:5432/NAME`);
+- the same secret environment variables as above.
+
+To bring the accounts along, copy the database across with PostgreSQL's
+`pg_dump` and `pg_restore` tools.
 
 ---
 
@@ -395,7 +505,7 @@ the phone, working offline) will come when the app goes online (Issue #25).
 - [x] React frontend (Vite + TypeScript) replacing the preview pages; adds to a phone's home screen
 - [ ] Redis caching, `@Scheduled` 6:00 AM summaries and push notifications
 - [ ] PWA install support, then Android/iOS apps with Capacitor
-- [ ] Deploy (backend, database and frontend hosted online)
+- [ ] Put the app online: packaged for Render (`Dockerfile`, `render.yaml`, PostgreSQL), tested in GitHub Actions; next, create it on Render
 
 ---
 
@@ -413,6 +523,10 @@ the phone, working offline) will come when the app goes online (Issue #25).
 | Phone can't open the app | Same Wi-Fi as the computer? Right address (`ipconfig`)? For port 5173, allow Node.js through Windows Firewall when asked. |
 | Startup error about `/api/today` being mapped twice | An old copy of `TodayController.java` still has code in it. It should contain only comments; you can delete it. |
 | `java -version` shows 11 or older | Install Java 17+ from adoptium.net, then restart VS Code. |
+| The online app takes a minute to open | On Render's free plan it sleeps after 15 minutes without visitors and wakes on the next visit. Starter plan = always on. |
+| Codes don't arrive on the online app | Render's free plan blocks email. Find the code in Render → orthodox-daily → **Logs**. |
+| Render shows "Deploy failed" | Open the deploy's log in Render. If the app started but stopped with `'url' must start with "jdbc"`, the `DATABASE_URL` environment variable is missing. |
+| My push didn't update the online app | Render waits for the GitHub checks. A red ✗ in the **Actions** tab means a check failed, so the old version stays online. |
 
 ---
 
