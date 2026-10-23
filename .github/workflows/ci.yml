@@ -7,6 +7,11 @@
 # **Actions** tab. A green ✓ means everything still builds and the tests pass;
 # a red ✗ means something broke, and the log shows which step failed.
 #
+# A second job ("container") builds the app's container from the Dockerfile,
+# starts it with a PostgreSQL database the way it runs online, and tries it
+# out with .github/scripts/smoke-test.sh. Render only puts a new version
+# online after both jobs pass.
+#
 # The badge at the top of README.md shows the result of the latest run.
 
 name: Build and test
@@ -68,3 +73,70 @@ jobs:
           name: orthodoxapp-jar
           path: target/*.jar
           retention-days: 14
+
+  # A second job, run at the same time as the first on another borrowed
+  # machine: build the app's container exactly as Render does (from the
+  # Dockerfile), start it the way it runs online, and try it out. Render only
+  # deploys once both jobs pass (render.yaml: autoDeployTrigger: checksPass).
+  container:
+    name: Container (as it runs online)
+    runs-on: ubuntu-latest
+
+    # A real PostgreSQL database for this job only, like the one on Render.
+    # The password is a throwaway: this database disappears when the job ends.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: orthodoxapp
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: orthodoxapp
+        ports:
+          - 5432:5432
+        # Wait until PostgreSQL is ready before starting the steps.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      # 1. Build the image: the React app, the .jar and Java, all in one box.
+      - name: Build the container image
+        run: docker build -t orthodox-daily .
+
+      # 2. Start it like Render's free plan: a tenth of a processor and 512 MB
+      #    of memory, PORT and DATABASE_URL set by the host.
+      #    --network host lets the container reach PostgreSQL at localhost.
+      - name: Start the container
+        run: |
+          docker run -d --name app --network host --cpus 0.1 --memory 512m \
+            -e PORT=10000 \
+            -e DATABASE_URL=postgresql://orthodoxapp:ci-only-password@localhost:5432/orthodoxapp \
+            orthodox-daily
+
+      # 3. Wait (up to 5 minutes) until it answers, and say how long it took:
+      #    about how long a sleeping free app on Render takes to wake up.
+      - name: Wait for it to start
+        run: |
+          for i in $(seq 1 150); do
+            if curl -fsS -o /dev/null http://localhost:10000/; then
+              echo "Started in about $((i * 2)) seconds."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "It didn't start within 5 minutes."
+          exit 1
+
+      # 4. Try it out: see .github/scripts/smoke-test.sh for the checks.
+      - name: Try it out
+        run: bash .github/scripts/smoke-test.sh http://localhost:10000
+
+      # Always show the app's own log, so a failure can be investigated.
+      - name: Show the app's log
+        if: always()
+        run: docker logs app
