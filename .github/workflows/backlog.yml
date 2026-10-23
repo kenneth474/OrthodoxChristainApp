@@ -16,7 +16,8 @@ name: Sync backlog to Issues
 on:
   push:
     branches: [main]
-    paths: ['.github/backlog.json']   # only when the backlog file changes
+    # only when the backlog file (or this workflow itself) changes
+    paths: ['.github/backlog.json', '.github/workflows/backlog.yml']
   workflow_dispatch:                  # or by hand from the Actions tab
 
 # The workflow's built-in token may create and close Issues, nothing more.
@@ -28,11 +29,11 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # github-script runs a small JavaScript program with a ready-made GitHub
       # API client called "github".
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');

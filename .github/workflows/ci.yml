@@ -30,12 +30,12 @@ jobs:
     steps:
       # 1. Download this repository's code onto the machine.
       - name: Check out the code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # 2. Install Java 17 (the version pom.xml asks for). "cache: maven" saves the
       #    downloaded libraries between runs, so later runs are much faster.
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -44,7 +44,7 @@ jobs:
       # 3. Install Node.js 24, which runs the React app's tools. "cache: npm"
       #    saves the downloaded packages between runs.
       - name: Set up Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: npm
@@ -68,7 +68,7 @@ jobs:
       # 6. Keep the packaged app so it can be downloaded from the run's page
       #    (Actions → a run → "Artifacts" at the bottom).
       - name: Save the packaged app
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: orthodoxapp-jar
           path: target/*.jar
@@ -102,7 +102,7 @@ jobs:
 
     steps:
       - name: Check out the code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # 1. Build the image: the React app, the .jar and Java, all in one box.
       - name: Build the container image
@@ -120,10 +120,11 @@ jobs:
 
       # 3. Wait (up to 5 minutes) until it answers, and say how long it took:
       #    about how long a sleeping free app on Render takes to wake up.
+      #    (curl -fs = quietly; "not answering yet" isn't worth a log line.)
       - name: Wait for it to start
         run: |
           for i in $(seq 1 150); do
-            if curl -fsS -o /dev/null http://localhost:10000/; then
+            if curl -fs -o /dev/null http://localhost:10000/; then
               echo "Started in about $((i * 2)) seconds."
               exit 0
             fi
