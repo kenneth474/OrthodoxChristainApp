@@ -12,9 +12,11 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 > date, with full scripture text, saints' lives and a fasting rule engine.
 > Accounts work too: email and password with strong password rules, an
 > optional phone number, two-step verification by email or text, and
-> Google/Apple sign-in ready to switch on. It's packaged to run online on
-> Render (see [Putting the App Online](#putting-the-app-online)). See the
-> [Roadmap](#roadmap) below.
+> Google/Apple sign-in ready to switch on. See the [Roadmap](#roadmap) below.
+>
+> **Try it: [orthodox-daily.onrender.com](https://orthodox-daily.onrender.com)**
+> (on Render's free plan, so the first visit after a quiet spell takes about
+> a minute while it wakes up; see [Putting the App Online](#putting-the-app-online)).
 >
 > This is an independent project, not an official app of the Antiochian
 > Orthodox Christian Archdiocese of North America.
@@ -352,8 +354,9 @@ the phone, working offline) work on the online address instead (see
 
 ## Putting the App Online
 
-The app runs online on [Render](https://render.com), which builds it straight
-from this GitHub repository. Three files make that work:
+The app runs online at **https://orthodox-daily.onrender.com**, on
+[Render](https://render.com), which builds it straight from this GitHub
+repository. Three files make that work:
 
 | File | What it does |
 |---|---|
@@ -505,7 +508,8 @@ To bring the accounts along, copy the database across with PostgreSQL's
 - [x] React frontend (Vite + TypeScript) replacing the preview pages; adds to a phone's home screen
 - [ ] Redis caching, `@Scheduled` 6:00 AM summaries and push notifications
 - [ ] PWA install support, then Android/iOS apps with Capacitor
-- [ ] Put the app online: packaged for Render (`Dockerfile`, `render.yaml`, PostgreSQL), tested in GitHub Actions; next, create it on Render
+- [x] Put the app online: [orthodox-daily.onrender.com](https://orthodox-daily.onrender.com) on Render (`Dockerfile`, `render.yaml`, PostgreSQL), tested in GitHub Actions before every deploy
+- [ ] Before people rely on it: upgrade Render's free database (deleted after 30 days) and send email online (Issue #32)
 
 ---
 
@@ -525,6 +529,7 @@ To bring the accounts along, copy the database across with PostgreSQL's
 | `java -version` shows 11 or older | Install Java 17+ from adoptium.net, then restart VS Code. |
 | The online app takes a minute to open | On Render's free plan it sleeps after 15 minutes without visitors and wakes on the next visit. Starter plan = always on. |
 | Codes don't arrive on the online app | Render's free plan blocks email. Find the code in Render → orthodox-daily → **Logs**. |
+| A Blueprint sync failed with "name already in use" | Click **Manual sync** on the Blueprint once more. (The very first sync did this; the second one created the web service.) |
 | Render shows "Deploy failed" | Open the deploy's log in Render. If the app started but stopped with `'url' must start with "jdbc"`, the `DATABASE_URL` environment variable is missing. |
 | My push didn't update the online app | Render waits for the GitHub checks. A red ✗ in the **Actions** tab means a check failed, so the old version stays online. |
 
