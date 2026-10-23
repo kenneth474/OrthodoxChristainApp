@@ -1,0 +1,46 @@
+<!doctype html>
+<!--
+  The one HTML page of the React app. React draws everything inside
+  <div id="root">; src/main.tsx is where it starts.
+
+  The <meta> and <link> tags below make the app feel native on a phone: when
+  you choose "Add to Home Screen" on an iPhone, it gets the gold cross icon,
+  opens full screen without Safari's address bar, and keeps its own name.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover lets the app draw under the iPhone's notch and home bar
+         (the CSS keeps text clear of them with env(safe-area-inset-...)). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Orthodox Daily</title>
+    <meta name="description" content="Daily readings, saints, fasting, the Bible and prayers for Antiochian Orthodox Christians." />
+
+    <link rel="icon" type="image/png" href="/icons/icon-32.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#f6f1e7" />
+
+    <!-- iPhone home-screen app -->
+    <link rel="apple-touch-icon" href="/icons/icon-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Orthodox Daily" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Apply your saved text size and theme BEFORE anything is drawn, so the
+         page never flashes the wrong colours (src/lib/appearance.ts keeps this
+         copy up to date). -->
+    <script>
+      try {
+        var saved = JSON.parse(localStorage.getItem('orthodoxDaily.appearance') || 'null') || {};
+        document.documentElement.dataset.theme = (saved.theme || 'SYSTEM').toLowerCase();
+        document.documentElement.dataset.textSize = (saved.textSize || 'NORMAL').toLowerCase();
+      } catch (e) {
+        document.documentElement.dataset.theme = 'system';
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
