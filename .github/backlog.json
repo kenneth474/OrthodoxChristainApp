@@ -473,6 +473,41 @@
       ],
       "labels": ["developer task", "platforms"],
       "milestone": "Phase 5: Every platform"
+    },
+    {
+      "title": "Choose the app's style",
+      "story": "As a user, I want to choose how the app looks from Orthodox-inspired styles, so that it feels like mine and not like every other app.",
+      "criteria": [
+        "Five styles: Illuminated manuscript, Byzantine mosaic, Candlelit vigil, Holy Mountain and Liturgical seasons",
+        "Each style has a light and a dark version",
+        "Choose a style when creating an account, and change it any time in Profile",
+        "Liturgical seasons follows the Church year, like the colours of the vestments"
+      ],
+      "labels": ["user story", "accounts"],
+      "milestone": "Phase 5: Every platform"
+    },
+    {
+      "title": "Tabs remember where I was",
+      "story": "As a user, I want each tab to stay exactly where I left it, so that switching tabs never loses my place or reloads the page.",
+      "criteria": [
+        "Switching tabs keeps each tab's page, scroll position and open sections",
+        "Nothing reloads when coming back to a tab",
+        "Pulling down at the top of a page refreshes it",
+        "Tapping the current tab again goes back to that tab's first page"
+      ],
+      "labels": ["user story", "platforms"],
+      "milestone": "Phase 5: Every platform"
+    },
+    {
+      "title": "Pray for the Archdiocese each day",
+      "story": "As a parishioner, I want a different diocese, hierarch or ministry to pray for each day, so that over the year I pray for the whole Archdiocese.",
+      "criteria": [
+        "A \"Pray today for\" card that changes every day",
+        "Shown on the Church tab and on Home",
+        "Includes a short commemoration in the style of the Church's litanies"
+      ],
+      "labels": ["user story", "content"],
+      "milestone": "Phase 4: Content"
     }
   ]
 }
