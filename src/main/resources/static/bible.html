@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<!--
+  BIBLE TAB  (http://localhost:8080/bible.html)
+  ---------
+  The whole Orthodox Bible: the Septuagint Old Testament (Brenton's
+  translation) and the King James New Testament. Both are public domain;
+  see src/main/resources/bible/README.md.
+
+  One page, three "views", chosen by the part of the address after the #:
+      bible.html            -> all the books
+      bible.html#PSA        -> the chapters of Psalms
+      bible.html#PSA.50     -> Psalm 50
+  Using the # means the browser's Back button moves between views, and any
+  chapter can be bookmarked or shared. The text comes from BibleController
+  (/api/bible/...).
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bible · Orthodox Daily</title>
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/reading.css">
+    <script src="/js/appearance.js"></script>
+    <script src="/js/tabs.js" defer></script>
+</head>
+<body>
+<main>
+    <h1>Holy Bible</h1>
+    <p class="subtitle">Old Testament: the Septuagint · New Testament: King James Version</p>
+
+    <!-- The current view is drawn here by the script below. -->
+    <div id="view"><p class="status">Opening the Bible…</p></div>
+
+    <footer>
+        Old Testament: Sir Lancelot Brenton's translation of the Septuagint (1851), with the
+        Septuagint's Psalm numbering used in Orthodox services. New Testament: King James Version.
+        Both are public domain. Words in <i>italics</i> were added by the translators.
+    </footer>
+</main>
+
+<script src="/js/listen.js"></script>
+<script>
+    const view = document.getElementById('view');
+    const LAST_READ_KEY = 'orthodoxDaily.bible.lastRead';
+    const OLD_TESTAMENT = ['Law', 'History', 'Wisdom', 'Prophets', 'Appendix'];
+    const NEW_TESTAMENT = ['Gospels', 'Acts and Epistles', 'Revelation'];
+
+    let books = [];       // every book, loaded once from /api/bible/books
+    let chapterShown;     // the chapter on screen, for the Listen button
+
+    // ---- Small helpers ----
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text ?? '';
+        return div.innerHTML;
+    }
+
+    // Translators' added words are in [brackets] in the text; show them in italics.
+    function withItalics(text) {
+        return escapeHtml(text).replace(/\[([^\]]+)\]/g, '<i>$1</i>');
+    }
+
+    async function getJson(url) {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Couldn't load that (status ${response.status}).`);
+        return response.json();
+    }
+
+    function remember(code, chapter) {
+        try { localStorage.setItem(LAST_READ_KEY, `${code}.${chapter}`); } catch { /* storage off */ }
+    }
+    function lastRead() {
+        try { return localStorage.getItem(LAST_READ_KEY); } catch { return null; }
+    }
+
+    // ---- View 1: all the books ----
+    function showBooks() {
+        // The books in one section, as chips linking to their chapter lists.
+        const section = name => {
+            const inSection = books.filter(book => book.section === name);
+            if (inSection.length === 0) return '';
+            return `<h3>${escapeHtml(name)}</h3><div class="chips">`
+                + inSection.map(book => `<a class="chip" href="#${book.code}">${escapeHtml(book.name)}</a>`).join('')
+                + '</div>';
+        };
+
+        // "Continue reading" where you left off, if you've read before.
+        let continueCard = '';
+        const last = lastRead();
+        if (last) {
+            const [code, chapter] = last.split('.');
+            const book = books.find(b => b.code === code);
+            if (book) {
+                continueCard = `<a class="card" style="display:block;text-decoration:none" href="#${code}.${chapter}">
+                    Continue reading: <strong>${escapeHtml(book.name)} ${chapter}</strong> ›</a>`;
+            }
+        }
+
+        view.innerHTML = continueCard
+            + `<section class="card"><h2>Old Testament</h2>${OLD_TESTAMENT.map(section).join('')}</section>`
+            + `<section class="card"><h2>New Testament</h2>${NEW_TESTAMENT.map(section).join('')}</section>`;
+    }
+
+    // ---- View 2: one book's chapters ----
+    function showChapters(code) {
+        const book = books.find(b => b.code === code);
+        if (!book) return showBooks();
+        // Array.from({length: n}, ...) makes the list 1, 2, ..., n.
+        const numbers = Array.from({ length: book.chapters }, (_, i) => i + 1);
+        view.innerHTML = `
+            <a class="back" href="#">‹ All books</a>
+            <section class="card">
+                <h2>${escapeHtml(book.name)}</h2>
+                <div class="chips numbers">
+                    ${numbers.map(n => `<a class="chip" href="#${code}.${n}">${n}</a>`).join('')}
+                </div>
+            </section>`;
+    }
+
+    // ---- View 3: one chapter ----
+    async function showChapter(code, number) {
+        view.innerHTML = '<p class="status">Loading…</p>';
+        const chapter = await getJson(`/api/bible/${encodeURIComponent(code)}/${number}`);
+        chapterShown = chapter;
+        remember(chapter.code, chapter.chapter);
+
+        // Paragraphs: the King James text marks where they start. The
+        // Septuagint text doesn't, so there each verse gets its own line,
+        // the way many printed Bibles set it out.
+        const hasParagraphs = chapter.verses.some(v => v.paragraphStart);
+        let html = '';
+        chapter.verses.forEach((verse, index) => {
+            const startsParagraph = !hasParagraphs || index === 0 || verse.paragraphStart;
+            if (startsParagraph) html += (index === 0 ? '' : '</p>') + '<p>';
+            html += `<sup>${escapeHtml(verse.number)}</sup>${withItalics(verse.text)} `;
+        });
+        html += '</p>';
+
+        // A link to the chapter before or after (an empty placeholder at the very start or end).
+        const link = (place, label) => place
+            ? `<a href="#${place.code}.${place.chapter}">${label(`${escapeHtml(place.book)} ${place.chapter}`)}</a>`
+            : '<span></span>';
+        view.innerHTML = `
+            <a class="back" href="#${chapter.code}">‹ ${escapeHtml(chapter.book)}</a>
+            <section class="card">
+                <h2>${escapeHtml(title(chapter))}</h2>
+                ${Listen.supported ? '<button type="button" class="listen" id="listen">🔊 Listen</button>' : ''}
+                <div class="text">${html}</div>
+                <nav class="pager">
+                    ${link(chapter.previous, text => `‹ ${text}`)}
+                    ${link(chapter.next, text => `${text} ›`)}
+                </nav>
+            </section>`;
+        window.scrollTo(0, 0);
+
+        document.getElementById('listen')?.addEventListener('click', () => {
+            // Read the plain words: no verse numbers, no brackets.
+            const words = chapter.verses.map(v => v.text.replace(/[\[\]]/g, '')).join(' ');
+            Listen.play(title(chapter), `${title(chapter)}. ${words}`);
+        });
+    }
+
+    // "Psalm 50" for Psalms, "John 3" for everything else.
+    function title(chapter) {
+        return chapter.code === 'PSA' ? `Psalm ${chapter.chapter}` : `${chapter.book} ${chapter.chapter}`;
+    }
+
+    // ---- Choosing the view from the address ----
+    async function route() {
+        Listen.stop();
+        const hash = decodeURIComponent(location.hash.slice(1)); // "PSA.50" (without the #)
+        try {
+            if (books.length === 0) books = await getJson('/api/bible/books');
+            const [code, chapter] = hash.split('.');
+            if (code && chapter) {
+                await showChapter(code, Number(chapter));
+            } else if (code) {
+                showChapters(code);
+            } else {
+                showBooks();
+            }
+        } catch (error) {
+            view.innerHTML = `<p class="error">${escapeHtml(error.message)}</p>
+                <p><a href="#">‹ All books</a></p>`;
+        }
+    }
+
+    // "hashchange" fires whenever the part after # changes: a link was
+    // clicked, or Back/Forward was pressed.
+    window.addEventListener('hashchange', route);
+    route();
+</script>
+</body>
+</html>

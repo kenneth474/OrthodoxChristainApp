@@ -62,8 +62,9 @@ public class SecurityConfig {
             // a new page or endpoint is private until we decide otherwise.
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/index.html", "/login.html", "/account.html",
-                        "/css/**", "/js/**", "/favicon.ico", "/error").permitAll()
-                .requestMatchers("/api/today", "/api/day/**", "/api/auth/**").permitAll()
+                        "/bible.html", "/prayers.html",
+                        "/css/**", "/js/**", "/data/**", "/favicon.ico", "/error").permitAll()
+                .requestMatchers("/api/today", "/api/day/**", "/api/bible/**", "/api/auth/**").permitAll()
                 .anyRequest().authenticated())
 
             // Apple sends people back with a POST from appleid.apple.com, which
