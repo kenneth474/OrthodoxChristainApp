@@ -31,3 +31,8 @@ Thumbs.db
 # Secret settings (passwords, API keys) - never commit these
 .env
 application-local.properties
+secrets.properties
+*.p8
+
+# The development database (user accounts on this computer)
+data/

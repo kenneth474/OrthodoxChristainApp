@@ -50,6 +50,36 @@
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
 
+        <!-- Spring Security + OAuth2 client: protects pages that need a login,
+             handles sessions and CSRF protection, hashes passwords, and does
+             "Sign in with Google / Apple" (OAuth2 / OpenID Connect). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-oauth2-client</artifactId>
+        </dependency>
+
+        <!-- Spring Data JPA: saves Java objects (like AppUser) into database
+             tables and loads them back, without writing SQL by hand. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- H2: a small database that runs inside the app and stores its data
+             in the data/ folder. Perfect while developing; PostgreSQL later. -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Mail: sends real emails (2FA codes) once an SMTP server is set in
+             secrets.properties. Until then, codes are printed to the console. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- DevTools: automatically restarts the app when you save a Java file,
              so you can see changes without stopping and starting it yourself.
              "optional" + "runtime" means it is only used while developing,
@@ -67,6 +97,21 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- MockMvc: sends pretend web requests to our controllers in tests,
+             without starting a real server. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Security test helpers, e.g. adding a CSRF token to test requests. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

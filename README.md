@@ -8,9 +8,11 @@ rule, scripture readings, saints and their lives**, a **parish finder** for
 churches near you, **user accounts**, **church news**, **prayers** and more.
 One codebase is planned to run on the web, Windows, macOS, Linux, Android and iOS.
 
-> **Status:** early development (v0.2). The liturgical calendar works for any
+> **Status:** early development (v0.3). The liturgical calendar works for any
 > date, with full scripture text, saints' lives and a fasting rule engine.
-> See the [Roadmap](#roadmap) below.
+> Accounts work too: email and password with strong password rules, an
+> optional phone number, two-step verification by email or text, and
+> Google/Apple sign-in ready to switch on. See the [Roadmap](#roadmap) below.
 >
 > This is an independent project, not an official app of the Antiochian
 > Orthodox Christian Archdiocese of North America.
@@ -26,7 +28,11 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 | **Lives of the saints** | The story of each saint or feast for the day | ✅ Working |
 | **Fasting rule engine** | Maps each day to a clear `FastingRule` (strict, wine only, wine & oil, fish, meat fast, fast-free) | ✅ Working |
 | **Find a parish near me** | Search churches by your location, city or ZIP, with distance and directions | 🔜 Next |
-| **Accounts** | Sign up, log in, choose a home parish, bookmark saints and feasts | 🔜 Planned |
+| **Accounts** | Sign up and sign in with email and password; optional phone number | ✅ Working |
+| **Strong passwords** | 12+ characters with upper and lower case, a number and a symbol; live checklist; lockout after 5 wrong tries | ✅ Working |
+| **Two-step verification** | A 6-digit code by email or text message after your password | ✅ Working (codes print in the terminal until [email/SMS are set up](#4-setting-up-sign-in-email-and-text-messages)) |
+| **Sign in with Google / Apple** | One-tap sign-in that creates or links your account | 🔧 Built: needs [keys](#4-setting-up-sign-in-email-and-text-messages) |
+| **Home parish & bookmarks** | Choose a home parish, bookmark saints and feasts | 🔜 Planned |
 | **Church news** | Archdiocese and parish news articles, managed by admins | 🔜 Planned |
 | **Parish events** | Parish admins post events (e.g. *"Vespers moved to 6:30 PM"*) | 🔜 Planned |
 | **Orthodox prayers** | Morning, evening and occasional prayers | 🔜 Planned |
@@ -45,12 +51,14 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 | **Backend framework** | Spring Boot 4 (Spring Web MVC) | REST APIs, dependency injection, scheduling, security |
 | **HTTP client** | Spring `RestClient` | Calls the external calendar API |
 | **JSON** | Jackson | Converts JSON to and from Java objects |
-| **Build tool** | Maven | Downloads libraries, compiles, packages the app |
+| **Build tool** | Maven (with the Maven Wrapper, `mvnw`) | Downloads libraries, compiles, tests, packages the app |
 | **Calendar data** | [Orthocal API](https://orthocal.info/api/) | Free Orthodox calendar API with a Greek/Antiochian tradition setting |
-| **Database** *(planned)* | PostgreSQL (H2 while developing) + Spring Data JPA | Users, parishes, events, news, bookmarks |
+| **Database** | H2 (stored in `data/`) + Spring Data JPA; PostgreSQL when live | User accounts now; parishes, events, news, bookmarks next |
+| **Security** | Spring Security: sessions, CSRF protection, BCrypt password hashing | Sign-in, two-step verification, protected account pages |
+| **Google / Apple sign-in** | OAuth 2.0 / OpenID Connect (Spring Security OAuth2 Client) | Sign in without a new password |
+| **Email & text messages** | Spring Mail (SMTP) and Twilio | Verification codes; printed in the terminal while developing |
 | **Maps & location** *(planned)* | Browser Geolocation API + OpenStreetMap | "Near me" parish search and maps |
 | **Cache** *(planned)* | Redis + Spring Cache | Each day's calendar data, cached until midnight |
-| **Security** *(planned)* | Spring Security + JWT | Logins and admin-only parish editing |
 | **Frontend** *(planned)* | React (Vite) as a PWA | Dashboard UI that runs in any browser and installs to a home screen |
 | **Mobile apps** *(planned)* | Capacitor | Wraps the React app as native Android and iOS apps |
 | **Dev tools** | VS Code, Spring Boot DevTools, Git/GitHub | Editing, auto-restart on save, version control |
@@ -65,17 +73,18 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
  │  Web / PWA / Android /   │ ─────▶ │                              │ ─────▶ │  orthocal.info   │
  │  iOS (React + Capacitor) │ ◀───── │  • CalendarController        │ ◀───── │  Greek tradition │
  │                          │        │  • CalendarService           │        │  New calendar    │
- │  Today: preview page     │        │  • OrthocalClient            │        └──────────────────┘
- │  (static/index.html)     │        │  • Parishes, accounts, news  │
+ │  Today: preview pages    │        │  • OrthocalClient            │        └──────────────────┘
+ │  (static/index.html,     │        │  • AuthController, accounts  │  ────▶  Google / Apple sign-in,
+ │   login.html, account)   │        │  • Parishes, news (planned)  │         email (SMTP), texts (Twilio)
  └──────────────────────────┘        └──────┬───────────────┬───────┘
                                             │               │
                                      ┌──────▼─────┐   ┌─────▼──────┐
-                                     │ PostgreSQL │   │   Redis    │
-                                     │ users,     │   │ daily      │
-                                     │ parishes,  │   │ calendar   │
-                                     │ events     │   │ cache      │
+                                     │ H2 now,    │   │   Redis    │
+                                     │ PostgreSQL │   │ daily      │
+                                     │ when live: │   │ calendar   │
+                                     │ users, ... │   │ cache      │
                                      └────────────┘   └────────────┘
-                                         (planned)        (planned)
+                                                          (planned)
 ```
 
 **The backend is built in layers, each with one job:**
@@ -108,6 +117,23 @@ CalendarController  ──▶  CalendarService  ──▶  OrthocalClient  ─�
 - Orthocal reflects strict typikon practice. Parishes may relax rules
   pastorally, so the app should always point people to their priest.
 
+### How signing in works
+
+- **Sessions, not tokens.** Signing in stores your account ID in a server-side
+  session; the browser keeps only a random session cookie. Every POST/PUT also
+  needs a CSRF token, which the pages fetch from `/api/auth/csrf`.
+- **Passwords** are checked against `PasswordPolicy` and stored only as BCrypt
+  hashes. 5 wrong passwords in a row lock the account for 15 minutes, and a
+  wrong email gets the same reply as a wrong password.
+- **Two-step verification:** after a correct password, `AuthController` sends
+  a 6-digit code (by email or text) and only finishes signing in once the code
+  is right. Codes are hashed, expire after 10 minutes and allow 5 tries.
+- **Google / Apple:** Spring Security handles the OAuth/OpenID Connect
+  exchange; `SocialSignInHandler` then finds, links or creates the account.
+  An account whose email was never verified loses its password when the
+  verified owner signs in with Google/Apple, so nobody can claim someone
+  else's email in advance.
+
 ---
 
 ## Project Structure
@@ -115,15 +141,18 @@ CalendarController  ──▶  CalendarService  ──▶  OrthocalClient  ─�
 ```
 OrthodoxChristianApp/
 ├── pom.xml                          # Maven "recipe": Spring Boot version, libraries, Java version
+├── mvnw, mvnw.cmd, .mvn/            # Maven Wrapper: run Maven without installing it
+├── secrets.example.properties       # Template for secrets.properties (keys; never committed)
 ├── README.md                        # This file
-├── .gitignore                       # Files Git should not track (build output, secrets)
+├── .gitignore                       # Files Git should not track (build output, secrets, data/)
 ├── .github/
 │   ├── workflows/ci.yml             # GitHub Actions: build and test on every push
 │   ├── workflows/backlog.yml        # GitHub Actions: turns backlog.json into Issues
 │   ├── backlog.json                 # The app's goals, written as user stories
 │   └── ISSUE_TEMPLATE/              # Forms for new user stories and bug reports
 ├── src/test/java/com/orthodox/orthodoxapp/
-│   └── FastingRuleTest.java         # Automated tests for the fasting rules
+│   ├── FastingRuleTest.java         # Tests for the fasting rules
+│   └── auth/                        # Tests for passwords, phones, Apple keys and the whole sign-in flow
 └── src/main/
     ├── java/com/orthodox/orthodoxapp/
     │   ├── OrthodoxappApplication.java  # Starting point: main() boots Spring
@@ -133,11 +162,27 @@ OrthodoxChristianApp/
     │   ├── OrthocalDay.java             # Mirror of Orthocal's JSON (input)
     │   ├── LiturgicalDay.java           # Our clean format sent to the frontend (output)
     │   ├── FastingRule.java             # Enum: STRICT, WINE_ONLY, WINE_AND_OIL, ...
-    │   └── ApiExceptionHandler.java     # Turns errors into clear JSON replies
+    │   ├── ApiExceptionHandler.java     # Turns errors into clear JSON replies
+    │   ├── account/                     # Who you are: AppUser (database table), your account settings
+    │   │   ├── AppUser.java, AppUserRepository.java, TwoFactorMethod.java
+    │   │   ├── AccountController.java   # /api/account/...: name, phone, verification, two-step
+    │   │   └── AccountService.java, AccountView.java
+    │   ├── auth/                        # Signing in
+    │   │   ├── SecurityConfig.java      # Who can see what, CSRF, sign-out, Google/Apple
+    │   │   ├── AuthController.java      # /api/auth/...: register, sign in, codes
+    │   │   ├── AuthService.java         # Password checks, lockout, Google/Apple accounts
+    │   │   ├── PasswordPolicy.java      # The strong-password rules
+    │   │   ├── VerificationCodeService.java  # 6-digit codes: create, send, check
+    │   │   ├── SessionSignIn.java       # Marks a session as signed in
+    │   │   └── SocialClientRegistrations.java, AppleClientSecret.java, SocialSignInHandler.java, ...
+    │   └── notify/                      # Sending emails and texts (or printing them while developing)
     └── resources/
-        ├── application.properties       # App settings (port, name)
+        ├── application.properties       # App settings (port, database, secrets file)
         └── static/
-            └── index.html               # Temporary preview page (replaced by React later)
+            ├── index.html               # Today's calendar (replaced by React later)
+            ├── login.html               # Sign in / create account / enter code
+            ├── account.html             # Your account and two-step verification
+            ├── css/forms.css, js/api.js # Shared look and fetch helper for those pages
 ```
 
 Every code file has comments explaining what each part does.
@@ -155,8 +200,15 @@ Every code file has comments explaining what each part does.
   - *Spring Boot Extension Pack* (VMware/Broadcom)
 - **Git** (to save your progress and push to GitHub).
 
-You don't need to install Maven separately. VS Code's Java extension reads
-`pom.xml` and downloads the libraries itself.
+You don't need to install Maven. VS Code's Java extension reads `pom.xml` and
+downloads the libraries itself, and the **Maven Wrapper** runs Maven from a
+terminal. In VS Code's terminal (**Ctrl+`**):
+
+```powershell
+.\mvnw.cmd test
+```
+
+runs every automated test (the first run downloads Maven, about 10 MB).
 
 ### 2. Open the project
 
@@ -180,8 +232,27 @@ When the terminal shows `Started OrthodoxappApplication`, open:
 | http://localhost:8080/?date=2026-12-25 | The preview page for a specific date |
 | http://localhost:8080/api/today | Today's raw JSON from our backend |
 | http://localhost:8080/api/day/2026/12/25 | Raw JSON for any date |
+| http://localhost:8080/login.html | Sign in, or create an account |
+| http://localhost:8080/account.html | Your account: verify email/phone, two-step verification |
 
 To stop the app, click the red ■ square in the toolbar or press **Shift+F5**.
+
+**Where are my codes?** Until email and texts are set up (below), every code
+is printed in the VS Code terminal where the app runs, in a box marked
+`EMAIL (development mode...)` or `TEXT MESSAGE (development mode...)`.
+
+### 4. Setting up sign-in, email and text messages
+
+Everything here is optional. Keys go in **`secrets.properties`**, which Git
+ignores. Copy `secrets.example.properties` to `secrets.properties`, fill in a
+section, and restart the app. The example file explains each setting.
+
+| What | You need | Cost |
+|---|---|---|
+| **Google sign-in** | An OAuth client ID from [Google Cloud Console](https://console.cloud.google.com/apis/credentials), with redirect URI `http://localhost:8080/login/oauth2/code/google` | Free |
+| **Real emails** | An SMTP server, e.g. a Gmail [app password](https://myaccount.google.com/apppasswords) | Free for testing |
+| **Real texts** | A [Twilio](https://www.twilio.com) account and phone number | About 1¢ per text, plus US registration |
+| **Apple sign-in** | An [Apple Developer](https://developer.apple.com/programs/) account and the app online at an `https://` address (Apple doesn't allow `localhost`) | $99/year |
 
 ---
 
@@ -234,8 +305,14 @@ The app is set up so you can watch changes appear while it runs:
 - [ ] "Near me" search using the browser's location and the Haversine distance formula
 - [ ] Search by city, state or ZIP; filter by diocese; map and directions links
 
-**Phase 3: Accounts** 
-- [ ] Spring Security: sign up, log in (passwords hashed with BCrypt), JWT tokens
+**Phase 3: Accounts**
+- [x] Spring Security: sign up and sign in with sessions, BCrypt password hashes, CSRF protection
+- [x] Strong password rules with a live checklist; lockout after 5 wrong tries
+- [x] Optional phone number, verified by text
+- [x] Two-step verification by email or text message
+- [ ] Sign in with Google (built; needs keys) and Apple (built; needs Apple Developer account and HTTPS)
+- [ ] Real email and text delivery (built; needs SMTP and Twilio settings)
+- [ ] Reset a forgotten password
 - [ ] Roles: member, parish admin, site admin
 - [ ] Profile: home parish, bookmarked saints and feasts
 
@@ -256,6 +333,9 @@ The app is set up so you can watch changes appear while it runs:
 | Problem | Fix |
 |---|---|
 | `Port 8080 was already in use` | Another copy is still running. Stop it (red ■), or change `server.port` in `application.properties`. |
+| Where's my 6-digit code? | Until email/texts are set up, codes are printed in the VS Code terminal running the app. |
+| No "Continue with Google" button | Fill in both Google settings in `secrets.properties`, then restart the app. |
+| I want an empty database | Stop the app and delete the `data/` folder. It's recreated on the next start. |
 | Red squiggles everywhere after opening | The Java extension is still downloading libraries. Wait, or run **Ctrl+Shift+P → Java: Clean Java Language Server Workspace**. |
 | Page says *"Could not load this day"* | Make sure the app is running and you're online. Check the VS Code terminal for an error. |
 | Startup error about `/api/today` being mapped twice | An old copy of `TodayController.java` still has code in it. It should contain only comments; you can delete it. |

@@ -1,5 +1,6 @@
 package com.orthodox.orthodoxapp;
 
+import com.orthodox.orthodoxapp.auth.AuthException;
 import java.time.DateTimeException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -41,5 +42,21 @@ public class ApiExceptionHandler {
     @ExceptionHandler(DateTimeException.class)
     public ProblemDetail invalidDate(DateTimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "That date doesn't exist.");
+    }
+
+    /**
+     * A sign-in or account problem, e.g. a wrong password (401) or a weak one
+     * (400). The message was written to be shown to the user as it is. For weak
+     * passwords, "problems" lists every broken rule:
+     *   { "status": 400, "detail": "Please choose a stronger password.",
+     *     "problems": ["Add a number (0-9)."] }
+     */
+    @ExceptionHandler(AuthException.class)
+    public ProblemDetail authProblem(AuthException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(ex.status(), ex.getMessage());
+        if (!ex.problems().isEmpty()) {
+            problem.setProperty("problems", ex.problems());
+        }
+        return problem;
     }
 }

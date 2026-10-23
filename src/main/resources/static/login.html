@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<!--
+  SIGN IN / CREATE ACCOUNT PAGE  (http://localhost:8080/login.html)
+  ------------------------------
+  Talks to AuthController (/api/auth/...) through the api() helper in js/api.js.
+  Three panels; only one shows at a time:
+    1. Sign in         - email + password, or the Google / Apple buttons
+    2. Create account  - name, email, password (with a live checklist), phone (optional)
+    3. Enter code      - the 6-digit code, when two-step verification is on
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign in · Orthodox Daily</title>
+    <link rel="stylesheet" href="/css/forms.css">
+</head>
+<body>
+<main class="narrow">
+    <p class="back"><a href="/">‹ Back to today</a></p>
+    <h1>Orthodox Daily</h1>
+
+    <div class="tabs" id="tabs">
+        <button type="button" class="tab active" id="tab-sign-in">Sign in</button>
+        <button type="button" class="tab" id="tab-register">Create account</button>
+    </div>
+
+    <p id="message" class="message" hidden></p>
+
+    <!-- Only the providers set up in secrets.properties are shown. -->
+    <div id="social" hidden>
+        <a id="google" class="social-button" href="/oauth2/authorization/google" hidden>Continue with Google</a>
+        <a id="apple" class="social-button apple" href="/oauth2/authorization/apple" hidden>Continue with Apple</a>
+        <p class="divider">or use your email</p>
+    </div>
+
+    <!-- 1. Sign in -->
+    <form id="sign-in-form" class="card">
+        <label>Email
+            <input type="email" name="email" autocomplete="email" required>
+        </label>
+        <label>Password
+            <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button type="submit" class="primary">Sign in</button>
+    </form>
+
+    <!-- 2. Create account -->
+    <form id="register-form" class="card" hidden>
+        <label>Your name
+            <input name="displayName" autocomplete="name" maxlength="60" required>
+        </label>
+        <label>Email
+            <input type="email" name="email" autocomplete="email" required>
+        </label>
+        <label>Password
+            <input type="password" name="password" autocomplete="new-password" required>
+        </label>
+        <!-- Ticks itself off as you type. The server (PasswordPolicy.java)
+             checks these rules again, plus a few more. -->
+        <ul class="rules" id="rules">
+            <li data-rule="length">At least 12 characters</li>
+            <li data-rule="upper">An uppercase letter</li>
+            <li data-rule="lower">A lowercase letter</li>
+            <li data-rule="number">A number</li>
+            <li data-rule="symbol">A symbol, such as ! ? # $ % &amp;</li>
+        </ul>
+        <label>Confirm password
+            <input type="password" name="confirm" autocomplete="new-password" required>
+        </label>
+        <label>Phone number <span class="optional">(optional)</span>
+            <input type="tel" name="phone" autocomplete="tel" placeholder="(214) 555-0123">
+        </label>
+        <p class="hint">With a phone number you can choose to get sign-in codes by text message.</p>
+        <button type="submit" class="primary">Create account</button>
+    </form>
+
+    <!-- 3. Enter the two-step verification code -->
+    <form id="code-form" class="card" hidden>
+        <p>We sent a 6-digit code to <strong id="sent-to"></strong>. It expires in 10 minutes.</p>
+        <label>Code
+            <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+        </label>
+        <button type="submit" class="primary">Verify and sign in</button>
+        <button type="button" class="link" id="resend">Send a new code</button> ·
+        <button type="button" class="link" id="start-over">Start over</button>
+    </form>
+</main>
+
+<script src="/js/api.js"></script>
+<script>
+    const $ = id => document.getElementById(id);
+    let socialAvailable = false;
+
+    // Show one panel and hide the others.
+    function showPanel(id) {
+        for (const panel of ['sign-in-form', 'register-form', 'code-form']) {
+            $(panel).hidden = panel !== id;
+        }
+        $('tab-sign-in').classList.toggle('active', id === 'sign-in-form');
+        $('tab-register').classList.toggle('active', id === 'register-form');
+        $('tabs').hidden = id === 'code-form';
+        $('social').hidden = id === 'code-form' || !socialAvailable;
+        hideMessage();
+    }
+
+    // Runs a form's action: disables its button while waiting, shows any error.
+    async function submitting(form, action) {
+        const button = form.querySelector('button[type=submit]');
+        button.disabled = true;
+        try {
+            await action();
+        } catch (error) {
+            showMessage(error.message, error.problems);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    function askForCode(sentTo) {
+        showPanel('code-form');
+        $('sent-to').textContent = sentTo;
+        $('code-form').code.value = '';
+        $('code-form').code.focus();
+    }
+
+    // ---- Tabs ----
+    $('tab-sign-in').addEventListener('click', () => showPanel('sign-in-form'));
+    $('tab-register').addEventListener('click', () => showPanel('register-form'));
+    $('start-over').addEventListener('click', () => showPanel('sign-in-form'));
+
+    // ---- 1. Sign in ----
+    $('sign-in-form').addEventListener('submit', event => {
+        event.preventDefault(); // we send it with fetch instead of reloading the page
+        const form = event.target;
+        submitting(form, async () => {
+            const result = await api('POST', '/api/auth/sign-in', {
+                email: form.email.value,
+                password: form.password.value,
+            });
+            if (result.status === 'CODE_REQUIRED') {
+                askForCode(result.sentTo);
+            } else {
+                location.href = '/';
+            }
+        });
+    });
+
+    // ---- 2. Create account ----
+    // The same rules as PasswordPolicy.java. \p{Lu} = any uppercase letter,
+    // \p{Ll} = lowercase, \p{Nd} = digit (the "u" flag turns these on).
+    const RULES = {
+        length: p => p.length >= 12,
+        upper: p => /\p{Lu}/u.test(p),
+        lower: p => /\p{Ll}/u.test(p),
+        number: p => /\p{Nd}/u.test(p),
+        symbol: p => /[^\p{L}\p{Nd}\s]/u.test(p),
+    };
+    $('register-form').password.addEventListener('input', event => {
+        for (const item of $('rules').children) {
+            item.classList.toggle('met', RULES[item.dataset.rule](event.target.value));
+        }
+    });
+
+    $('register-form').addEventListener('submit', event => {
+        event.preventDefault();
+        const form = event.target;
+        if (form.password.value !== form.confirm.value) {
+            showMessage("The two passwords don't match.");
+            return;
+        }
+        submitting(form, async () => {
+            await api('POST', '/api/auth/register', {
+                displayName: form.displayName.value,
+                email: form.email.value,
+                password: form.password.value,
+                phone: form.phone.value,
+            });
+            location.href = '/account.html?welcome=1';
+        });
+    });
+
+    // ---- 3. Two-step verification code ----
+    $('code-form').addEventListener('submit', event => {
+        event.preventDefault();
+        const form = event.target;
+        submitting(form, async () => {
+            await api('POST', '/api/auth/sign-in/verify', { code: form.code.value });
+            location.href = '/';
+        });
+    });
+
+    $('resend').addEventListener('click', async () => {
+        try {
+            const result = await api('POST', '/api/auth/sign-in/resend');
+            showMessage(`We sent a new code to ${result.sentTo}.`, [], 'info');
+        } catch (error) {
+            showMessage(error.message);
+        }
+    });
+
+    // ---- Start ----
+    // Show the Google / Apple buttons that are set up.
+    api('GET', '/api/auth/options').then(options => {
+        $('google').hidden = !options.google;
+        $('apple').hidden = !options.apple;
+        socialAvailable = options.google || options.apple;
+        $('social').hidden = !socialAvailable || !$('code-form').hidden;
+    }).catch(() => {});
+
+    if (location.hash === '#register') {
+        showPanel('register-form');
+    }
+    if (new URLSearchParams(location.search).get('error') === 'social') {
+        showMessage("Signing in with Google or Apple didn't work. Please try again, or use your email.");
+    }
+</script>
+</body>
+</html>

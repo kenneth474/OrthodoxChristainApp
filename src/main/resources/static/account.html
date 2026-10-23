@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<!--
+  ACCOUNT PAGE  (http://localhost:8080/account.html)
+  ------------
+  Your name, email and phone, verifying them, and two-step verification.
+  Talks to AccountController (/api/account/...). If you're not signed in,
+  the first request gets a 401 and we send you to the sign-in page.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Your account · Orthodox Daily</title>
+    <link rel="stylesheet" href="/css/forms.css">
+</head>
+<body>
+<main class="narrow">
+    <p class="back"><a href="/">‹ Back to today</a></p>
+    <h1>Your account</h1>
+
+    <p id="message" class="message" hidden></p>
+
+    <section class="card">
+        <h2>Name</h2>
+        <form id="name-form" class="inline">
+            <input name="displayName" maxlength="60" required aria-label="Your name">
+            <button type="submit">Save</button>
+        </form>
+    </section>
+
+    <section class="card">
+        <h2>Email</h2>
+        <p><span id="email"></span><span id="email-badge" class="badge"></span></p>
+        <button type="button" id="email-send-code" hidden>Email me a code to verify it</button>
+        <form id="email-code-form" class="inline" hidden>
+            <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"
+                   placeholder="6-digit code" required aria-label="Email code">
+            <button type="submit">Verify</button>
+        </form>
+    </section>
+
+    <section class="card">
+        <h2>Phone <span class="optional">(optional)</span></h2>
+        <form id="phone-form" class="inline">
+            <input name="phone" type="tel" autocomplete="tel" placeholder="(214) 555-0123" aria-label="Phone number">
+            <button type="submit">Save</button>
+        </form>
+        <p id="phone-status" hidden><span id="phone-badge" class="badge"></span></p>
+        <button type="button" id="phone-send-code" hidden>Text me a code to verify it</button>
+        <form id="phone-code-form" class="inline" hidden>
+            <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"
+                   placeholder="6-digit code" required aria-label="Text message code">
+            <button type="submit">Verify</button>
+        </form>
+        <p class="hint">To remove your number, clear the box and save.</p>
+    </section>
+
+    <section class="card">
+        <h2>Two-step verification</h2>
+        <p class="hint">After your password, we'll also ask for a 6-digit code, so a stolen
+            password alone isn't enough to get into your account.</p>
+        <form id="two-factor-form">
+            <label class="choice"><input type="radio" name="method" value="NONE"> Off</label>
+            <label class="choice"><input type="radio" name="method" value="EMAIL"> Email me a code
+                <span class="hint" id="email-needed"></span></label>
+            <label class="choice"><input type="radio" name="method" value="SMS"> Text me a code
+                <span class="hint" id="sms-needed"></span></label>
+            <button type="submit">Save</button>
+        </form>
+        <p id="two-factor-social" class="hint" hidden>You sign in with Google or Apple, which
+            protect your account with their own security, including their own two-step verification.</p>
+    </section>
+
+    <section class="card">
+        <h2>Ways you sign in</h2>
+        <ul id="methods" class="plain"></ul>
+    </section>
+
+    <button type="button" id="sign-out">Sign out</button>
+</main>
+
+<script src="/js/api.js"></script>
+<script>
+    const $ = id => document.getElementById(id);
+
+    // Fills the page in from an AccountView (see AccountView.java).
+    function render(account) {
+        $('name-form').displayName.value = account.displayName;
+
+        $('email').textContent = account.email;
+        setBadge($('email-badge'), account.emailVerified);
+        $('email-send-code').hidden = account.emailVerified;
+        if (account.emailVerified) $('email-code-form').hidden = true;
+
+        $('phone-form').phone.value = account.phoneNumber ?? '';
+        $('phone-status').hidden = !account.phoneNumber;
+        setBadge($('phone-badge'), account.phoneVerified);
+        $('phone-send-code').hidden = !account.phoneNumber || account.phoneVerified;
+        if (!account.phoneNumber || account.phoneVerified) $('phone-code-form').hidden = true;
+
+        // Two-step verification only applies to password sign-in.
+        const form = $('two-factor-form');
+        form.hidden = !account.hasPassword;
+        $('two-factor-social').hidden = account.hasPassword;
+        form.method.value = account.twoFactorMethod;
+        form.querySelector('[value=EMAIL]').disabled = !account.emailVerified;
+        form.querySelector('[value=SMS]').disabled = !account.phoneVerified;
+        $('email-needed').textContent = account.emailVerified ? '' : '(verify your email first)';
+        $('sms-needed').textContent = account.phoneVerified ? '' : '(add and verify a phone first)';
+
+        $('methods').innerHTML = [
+            account.hasPassword && 'Email and password',
+            account.googleLinked && 'Google',
+            account.appleLinked && 'Apple',
+        ].filter(Boolean).map(method => `<li>✓ ${method}</li>`).join('');
+    }
+
+    function setBadge(element, verified) {
+        element.textContent = verified ? 'Verified' : 'Not verified';
+        element.className = 'badge ' + (verified ? 'ok' : 'warn');
+    }
+
+    // Runs an action and shows the result. A 401 means the session ended.
+    async function run(action, successText) {
+        try {
+            await action();
+            if (successText) showMessage(successText, [], 'info');
+        } catch (error) {
+            if (error.status === 401) {
+                location.href = '/login.html';
+            } else {
+                showMessage(error.message, error.problems);
+            }
+        }
+    }
+
+    async function reload() {
+        render(await api('GET', '/api/account'));
+    }
+
+    // Lets a form send its data without reloading the page.
+    function onSubmit(id, handler) {
+        $(id).addEventListener('submit', event => {
+            event.preventDefault();
+            handler(event.target);
+        });
+    }
+
+    // ---- Name ----
+    onSubmit('name-form', form => run(async () => {
+        render(await api('PUT', '/api/account/name', { displayName: form.displayName.value }));
+    }, 'Name saved.'));
+
+    // ---- Email ----
+    $('email-send-code').addEventListener('click', () => run(async () => {
+        const result = await api('POST', '/api/account/email/send-code');
+        $('email-code-form').hidden = false;
+        $('email-code-form').code.focus();
+        showMessage(`We emailed a code to ${result.sentTo}.`, [], 'info');
+    }));
+
+    onSubmit('email-code-form', form => run(async () => {
+        render(await api('POST', '/api/account/email/verify', { code: form.code.value }));
+        form.reset();
+    }, 'Your email is verified.'));
+
+    // ---- Phone ----
+    onSubmit('phone-form', form => run(async () => {
+        const result = await api('PUT', '/api/account/phone', { phone: form.phone.value });
+        await reload();
+        if (result.sentTo) {
+            $('phone-code-form').hidden = false;
+            $('phone-code-form').code.focus();
+            showMessage(`We texted a code to ${result.sentTo}.`, [], 'info');
+        } else {
+            showMessage('Phone number saved.', [], 'info');
+        }
+    }));
+
+    $('phone-send-code').addEventListener('click', () => run(async () => {
+        const result = await api('POST', '/api/account/phone/send-code');
+        $('phone-code-form').hidden = false;
+        $('phone-code-form').code.focus();
+        showMessage(`We texted a code to ${result.sentTo}.`, [], 'info');
+    }));
+
+    onSubmit('phone-code-form', form => run(async () => {
+        render(await api('POST', '/api/account/phone/verify', { code: form.code.value }));
+        form.reset();
+    }, 'Your phone number is verified.'));
+
+    // ---- Two-step verification ----
+    onSubmit('two-factor-form', form => run(async () => {
+        render(await api('PUT', '/api/account/two-factor', { method: form.method.value }));
+    }, 'Two-step verification updated.'));
+
+    // ---- Sign out ----
+    $('sign-out').addEventListener('click', () => run(async () => {
+        await api('POST', '/api/auth/sign-out');
+        location.href = '/';
+    }));
+
+    // ---- Start ----
+    run(async () => {
+        await reload();
+        if (new URLSearchParams(location.search).get('welcome')) {
+            showMessage('Welcome! Verify your email next, so you can use it for two-step verification.', [], 'info');
+        }
+    });
+</script>
+</body>
+</html>

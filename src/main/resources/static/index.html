@@ -56,6 +56,15 @@
             padding: 20px 16px 48px;
         }
 
+        /* ---- "Sign in" / your name, top right ---- */
+        .account-link {
+            text-align: right;
+            margin-bottom: 6px;
+            font-family: system-ui, sans-serif;
+            font-size: 0.85rem;
+        }
+        .account-link a { color: var(--gold); }
+
         /* ---- Date navigation bar ---- */
         .date-nav {
             display: flex;
@@ -182,6 +191,9 @@
 </head>
 <body>
 <main>
+    <!-- Becomes your name (linking to your account) once you're signed in. -->
+    <div class="account-link" id="account-link"><a href="/login.html">Sign in</a></div>
+
     <!-- Date navigation: previous day, pick a date, next day.
          (To jump back to today, use the date picker's own "Today" option.) -->
     <nav class="date-nav">
@@ -405,6 +417,18 @@
     // ---- Start: use ?date=... from the address if present, otherwise today ----
     const requested = new URLSearchParams(location.search).get('date');
     showDate(/^\d{4}-\d{2}-\d{2}$/.test(requested ?? '') ? requested : toIso(new Date()));
+
+    // ---- Signed in? Show your name instead of "Sign in" ----
+    // /api/account answers 401 when nobody is signed in; then we keep "Sign in".
+    fetch('/api/account')
+        .then(response => response.ok ? response.json() : null)
+        .then(account => {
+            if (account) {
+                document.getElementById('account-link').innerHTML =
+                    `<a href="/account.html">${escapeHtml(account.displayName)}</a>`;
+            }
+        })
+        .catch(() => {}); // backend offline: the calendar shows its own message
 </script>
 </body>
 </html>
