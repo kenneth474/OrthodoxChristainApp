@@ -39,7 +39,9 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 | **Home parish & bookmarks** | Choose a home parish, bookmark saints and feasts | 🔜 Planned |
 | **Church news** | Archdiocese and parish news articles, managed by admins | 🔜 Planned |
 | **Parish events** | Parish admins post events (e.g. *"Vespers moved to 6:30 PM"*) | 🔜 Planned |
-| **Orthodox prayers** | Morning, evening and occasional prayers | 🔜 Planned |
+| **Tab bar** | Home · Bible · Prayers · Profile at the bottom of every page, like Instagram's; Home is the default | ✅ Working |
+| **Orthodox Bible** | The whole Bible: Septuagint Old Testament (with Tobit, Wisdom, Sirach, Maccabees... and Orthodox Psalm numbering) and King James New Testament; continue reading; listen | ✅ Working |
+| **Prayer book** | Beginning, morning and evening prayers, the Creed, meals, the Theotokos, the Jesus Prayer, Communion, the departed, Lent and Pascha; listen | ✅ Working |
 | **Dioceses, ministries & about** | Information pages about the Archdiocese's structure and ministries | 🔜 Planned |
 | **Calendar caching** | Stores each day's data in Redis so the app is fast and gentle on the calendar API | 🔜 Planned |
 | **Morning notifications** | A 6:00 AM summary of major feasts and parish events | 🔜 Planned |
@@ -192,9 +194,14 @@ OrthodoxChristianApp/
     └── resources/
         ├── application.properties       # App settings (port, database, secrets file)
         └── static/
-            ├── index.html               # Today's calendar (replaced by React later)
+            ├── index.html               # Home tab: today's calendar (replaced by React later)
+            ├── bible.html               # Bible tab: books -> chapters -> text
+            ├── prayers.html             # Prayers tab: the prayer book
             ├── login.html               # Sign in / create account / enter code
-            ├── account.html             # Your account and two-step verification
+            ├── account.html             # Profile tab: your account and two-step verification
+            ├── data/prayers.json        # The prayers themselves (edit this to add or fix a prayer)
+            ├── js/tabs.js               # The Home / Bible / Prayers / Profile tab bar
+            ├── css/reading.css          # Shared look of the Bible and Prayers tabs
             ├── css/theme.css            # Light and dark colours, text sizes (every page)
             ├── js/appearance.js         # Applies your text size and theme before a page draws
             ├── js/listen.js             # Reads readings and lives aloud with the device's voice
@@ -250,6 +257,9 @@ When the terminal shows `Started OrthodoxappApplication`, open:
 | http://localhost:8080/api/day/2026/12/25 | Raw JSON for any date |
 | http://localhost:8080/login.html | Sign in, or create an account |
 | http://localhost:8080/account.html | Your account: verify email/phone, two-step verification |
+| http://localhost:8080/bible.html#PSA.50 | The Bible tab (here at Psalm 50) |
+| http://localhost:8080/prayers.html#morning | The Prayers tab (here at Morning Prayers) |
+| http://localhost:8080/api/bible/JOH/3 | Raw JSON for one Bible chapter |
 
 To stop the app, click the red ■ square in the toolbar or press **Shift+F5**.
 
@@ -337,7 +347,10 @@ The app is set up so you can watch changes appear while it runs:
 
 **Phase 4: Content** *(antiochian.org: Church News, Orthodox Prayers, Dioceses, Ministries, About)*
 - [ ] News articles and parish events with an admin editor (CRUD)
-- [ ] Prayer library, diocese and ministry pages
+- [x] Bottom tab bar: Home, Bible, Prayers, Profile
+- [x] The Orthodox Bible (Septuagint + King James New Testament)
+- [x] Prayer book (traditional prayers; the Archdiocese's own translations with its permission)
+- [ ] Diocese and ministry pages
 - [x] Link each day to the Archdiocese's Online Liturgical Guide (service texts)
 - [ ] Read and download the day's service texts in the app (waiting on permission)
 
@@ -368,6 +381,11 @@ The app is set up so you can watch changes appear while it runs:
 
 - Liturgical calendar data: [orthocal.info](https://orthocal.info), by Brian Glass
   ([source code](https://github.com/brianglass/orthocal-python)).
+- Bible: Sir Lancelot Brenton's English Septuagint (1851; updated spelling by
+  Adam Boyd, CC0) and the King James Version New Testament, both public domain,
+  from [eBible.org](https://ebible.org). See `src/main/resources/bible/README.md`.
+- Prayers: traditional Orthodox prayers in their common English wording. The
+  Archdiocese's own prayer book translations can be added with its permission.
 - Fasting guidance shown in the app follows strict typikon practice. Always
   follow the direction of your parish priest.
 - Feature ideas follow [antiochian.org](https://www.antiochian.org). Content

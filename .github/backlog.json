@@ -343,6 +343,46 @@
       "notes": "The Archdiocese publishes these texts at antiochian.org/liturgicday. The texts are its own approved translations, and the list of each day's files comes from a private, login-protected feed, so we link to the guide until we have permission."
     },
     {
+      "title": "Move around the app with tabs",
+      "story": "As a user, I want a tab bar at the bottom of the screen, like Instagram's, so that I can jump between the main parts of the app with one tap.",
+      "criteria": [
+        "Four tabs: Home (the default), Bible, Prayers and Profile",
+        "The current tab is highlighted",
+        "The Profile tab shows my photo when I'm signed in, and the sign-in page when I'm not"
+      ],
+      "labels": ["user story", "platforms"],
+      "milestone": "Phase 4: Content",
+      "done": true
+    },
+    {
+      "title": "Read the Orthodox Bible",
+      "story": "As an Orthodox Christian, I want the whole Bible in the app, with the Orthodox Old Testament, so that I can read any chapter at any time.",
+      "criteria": [
+        "Old Testament from the Septuagint, including Tobit, Judith, Wisdom, Sirach and the Maccabees, with Orthodox Psalm numbering",
+        "New Testament in the King James Version, matching the daily readings",
+        "Books in Orthodox order; chapter by chapter, with previous and next",
+        "Continue reading where I left off, and listen to any chapter",
+        "Only public-domain translations"
+      ],
+      "labels": ["user story", "content"],
+      "milestone": "Phase 4: Content",
+      "done": true
+    },
+    {
+      "title": "Pray with a prayer book",
+      "story": "As an Orthodox Christian, I want a prayer book in the app, so that I can keep my morning and evening prayers wherever I am.",
+      "criteria": [
+        "Beginning (Trisagion), morning and evening prayers, the Creed, meals, the Theotokos, the Jesus Prayer, before Scripture, Communion, the departed, protection, Lent and Pascha",
+        "Psalms come from the Bible tab's Septuagint text",
+        "Listen to a whole section",
+        "Prayers kept in a data file, so they can be corrected without changing code"
+      ],
+      "labels": ["user story", "content"],
+      "milestone": "Phase 4: Content",
+      "notes": "The Archdiocese's own prayer book translations are copyrighted; they could be added with its permission.",
+      "done": true
+    },
+    {
       "title": "Read church news",
       "story": "As an Orthodox Christian, I want to read Archdiocese and parish news, so that I stay connected to the life of the Church.",
       "criteria": [
