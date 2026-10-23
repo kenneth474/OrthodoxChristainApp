@@ -1,0 +1,25 @@
+# .dockerignore: files Docker should NOT copy in when building the image
+# (like .gitignore, but for the Dockerfile's COPY steps). Keeps the build
+# fast, and keeps secrets and computer-specific files out of the image.
+
+# Git history and editor settings
+.git/
+.github/
+.vscode/
+.idea/
+.claude/
+
+# Built or downloaded on this computer; the Dockerfile builds fresh copies
+target/
+frontend/node_modules/
+frontend/dist/
+src/main/resources/static/
+
+# The local development database and secret settings: never in the image
+data/
+secrets.properties
+*.p8
+.env
+
+# Personal notes
+STUDY_NOTES.md

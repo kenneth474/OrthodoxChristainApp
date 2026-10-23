@@ -1,0 +1,43 @@
+# render.yaml: a "Blueprint" telling Render (render.com) what to run.
+#
+# Render reads this file when you connect the GitHub repository (New >
+# Blueprint), then creates everything listed here: the web app, built from
+# our Dockerfile, and a PostgreSQL database for accounts. See README.md >
+# "Putting the App Online" for the step-by-step.
+#
+# This is the only Render-specific file. Moving to another host later means
+# running the same Dockerfile there and giving it a DATABASE_URL.
+#
+# Secrets (email password, Google keys) are NOT written here, because this
+# file is public on GitHub. Add them in Render's dashboard instead:
+# the web service > Environment.
+
+services:
+  - type: web
+    name: orthodox-daily           # the address becomes https://orthodox-daily.onrender.com (if the name is free)
+    runtime: docker                # build and run our Dockerfile
+    plan: free                     # $0: sleeps after 15 minutes without visitors. "starter" = always on
+    region: ohio                   # Render's closest region to Texas. Can't be changed later
+    branch: main
+    # Deploy a new version only after the "Build and test" checks on GitHub
+    # pass, so a broken change never replaces the working app.
+    autoDeployTrigger: checksPass
+    # Render visits this page to check the app has started (and is still OK).
+    healthCheckPath: /
+    envVars:
+      # The database's address (postgresql://user:password@host:5432/name),
+      # filled in by Render from the database below. DatabaseUrl.java reads it.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: orthodox-daily-db
+          property: connectionString
+
+databases:
+  - name: orthodox-daily-db
+    plan: free                     # $0, but Render deletes free databases after 30 days unless upgraded
+    region: ohio                   # must match the web service, so they can talk privately
+    databaseName: orthodoxapp
+    user: orthodoxapp
+    postgresMajorVersion: "17"
+    # Only Render's own services can connect; nobody on the internet can.
+    ipAllowList: []
