@@ -25,6 +25,8 @@
          every page. appearance.js applies your saved choice before the page draws. -->
     <link rel="stylesheet" href="/css/theme.css">
     <script src="/js/appearance.js"></script>
+    <!-- The Home / Bible / Prayers / Profile tab bar. "defer" = run it once the page is built. -->
+    <script src="/js/tabs.js" defer></script>
 
     <style>
         * { box-sizing: border-box; }
@@ -42,16 +44,6 @@
             margin: 0 auto;
             padding: 20px 16px 48px;
         }
-
-        /* ---- "Sign in" / your name, top right ---- */
-        .account-link {
-            text-align: right;
-            margin-bottom: 6px;
-            font-family: system-ui, sans-serif;
-            font-size: 0.85rem;
-        }
-        .account-link a { color: var(--gold); text-decoration: none; }
-        .account-link .avatar { margin-right: 6px; }
 
         /* ---- Date navigation bar ---- */
         .date-nav {
@@ -148,46 +140,8 @@
         .pill.avoid { background: var(--soft-red); color: var(--strict); text-decoration: line-through; }
         .pill.allowed { background: var(--soft-green); color: var(--free); }
 
-        /* ---- "Listen" buttons and the reading-aloud player (js/listen.js) ---- */
-        .listen {
-            font-family: system-ui, sans-serif;
-            font-size: 0.8rem;
-            padding: 4px 12px;
-            margin: 2px 0 8px;
-            border: 1px solid var(--line);
-            border-radius: 999px;
-            background: var(--card);
-            color: var(--gold);
-            cursor: pointer;
-        }
-        .listen:hover { border-color: var(--gold); }
-        .player {
-            position: fixed;
-            left: 50%;
-            bottom: 12px;
-            transform: translateX(-50%);
-            width: min(640px, calc(100% - 24px));
-            background: var(--card);
-            border: 1px solid var(--gold);
-            border-radius: 12px;
-            padding: 10px 14px;
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
-            font-family: system-ui, sans-serif;
-            font-size: 0.85rem;
-            z-index: 10;
-        }
-        .player-title { font-weight: 600; margin-bottom: 6px; }
-        .player-controls { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
-        .player button, .player select {
-            font: inherit;
-            padding: 4px 10px;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            background: var(--bg);
-            color: var(--ink);
-        }
-        .player-note { margin-top: 6px; color: var(--muted); }
-        main { padding-bottom: 120px; } /* room for the player bar */
+        /* (The "Listen" button and player styles are in css/theme.css, shared
+           with the Bible and Prayers tabs.) */
 
         /* ---- Service texts card ---- */
         .button-link {
@@ -244,8 +198,7 @@
 </head>
 <body>
 <main>
-    <!-- Becomes your photo and name (linking to your account) once you're signed in. -->
-    <div class="account-link" id="account-link"><a href="/login.html">Sign in</a></div>
+    <!-- (Your profile is the Profile tab at the bottom: js/tabs.js.) -->
 
     <!-- Filled in on your name day (see the end of the script). -->
     <div id="name-day"></div>
@@ -534,19 +487,13 @@
     const requested = new URLSearchParams(location.search).get('date');
     showDate(/^\d{4}-\d{2}-\d{2}$/.test(requested ?? '') ? requested : toIso(new Date()));
 
-    // ---- Signed in? Show your photo and name instead of "Sign in" ----
-    // /api/account answers 401 when nobody is signed in; then we keep "Sign in".
+    // ---- Signed in? Apply your settings, and greet you on your name day ----
+    // /api/account answers 401 when nobody is signed in; then there's nothing to do.
     fetch('/api/account')
         .then(response => response.ok ? response.json() : null)
         .then(account => {
             if (!account) return;
             rememberAppearance(account); // your text size and theme (js/appearance.js)
-
-            const avatar = account.photoVersion
-                ? `<img class="avatar" src="/api/account/photo?v=${account.photoVersion}" alt="">`
-                : `<span class="avatar">${escapeHtml(account.displayName.charAt(0).toUpperCase())}</span>`;
-            document.getElementById('account-link').innerHTML =
-                `<a href="/account.html">${avatar}${escapeHtml(account.displayName)}</a>`;
 
             // Is today your name day? (nameDay is "MM-DD"; toIso gives "YYYY-MM-DD".)
             if (account.nameDay && toIso(new Date()).slice(5) === account.nameDay) {

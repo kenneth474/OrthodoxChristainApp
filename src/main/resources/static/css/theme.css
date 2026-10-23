@@ -91,6 +91,78 @@
 :root[data-text-size="large"] { font-size: 112.5%; }
 :root[data-text-size="larger"] { font-size: 125%; }
 
+/* ---- The tab bar at the bottom of every page (js/tabs.js builds it) ---- */
+.tab-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    display: flex;
+    background: var(--card);
+    border-top: 1px solid var(--line);
+    /* env(safe-area-inset-bottom) = room for the iPhone's home bar */
+    padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
+    font-family: system-ui, sans-serif;
+}
+.tab-link {
+    flex: 1;                       /* four equal-width tabs */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.7rem;
+}
+.tab-link svg { width: 26px; height: 26px; }
+.tab-link.active { color: var(--gold); font-weight: 600; }
+.tab-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+.tab-link.active .tab-avatar { outline: 2px solid var(--gold); outline-offset: 1px; }
+/* Leave room at the bottom of each page so the tab bar never covers content. */
+body.has-tab-bar { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
+
+/* ---- "Listen" buttons and the reading-aloud player (js/listen.js) ---- */
+.listen {
+    font-family: system-ui, sans-serif;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    margin: 2px 0 8px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--card);
+    color: var(--gold);
+    cursor: pointer;
+}
+.listen:hover { border-color: var(--gold); }
+.player {
+    position: fixed;
+    left: 50%;
+    /* just above the tab bar */
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    width: min(640px, calc(100% - 24px));
+    background: var(--card);
+    border: 1px solid var(--gold);
+    border-radius: 12px;
+    padding: 10px 14px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+    font-family: system-ui, sans-serif;
+    font-size: 0.85rem;
+    z-index: 30;
+}
+.player-title { font-weight: 600; margin-bottom: 6px; }
+.player-controls { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.player button, .player select {
+    font: inherit;
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink);
+}
+.player-note { margin-top: 6px; color: var(--muted); }
+
 /* ---- Profile pictures (home page and account page) ---- */
 .avatar {
     width: 1.9em;
