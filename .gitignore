@@ -34,5 +34,7 @@ application-local.properties
 secrets.properties
 *.p8
 
-# The development database (user accounts on this computer)
-data/
+# The development database (user accounts on this computer). The leading "/"
+# means only the data/ folder at the top of the project, not others such as
+# src/main/resources/static/data/ (the prayer book).
+/data/
