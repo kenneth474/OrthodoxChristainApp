@@ -1,6 +1,6 @@
 # Orthodox Daily: An Antiochian Orthodox Companion App
 
-[![Build and test](https://github.com/kenneth474/OrthodoxChristainApp/actions/workflows/ci.yml/badge.svg)](https://github.com/kenneth474/OrthodoxChristainApp/actions/workflows/ci.yml)
+[![Build and test](https://github.com/kenneth474/OrthodoxChristianApp/actions/workflows/ci.yml/badge.svg)](https://github.com/kenneth474/OrthodoxChristianApp/actions/workflows/ci.yml)
 
 A cross-platform app for Antiochian Orthodox Christians, inspired by the
 features of [antiochian.org](https://www.antiochian.org): each day's **fasting
@@ -296,11 +296,11 @@ The app is set up so you can watch changes appear while it runs:
 
 ### How we track work
 
-- **User stories:** every goal is a GitHub [Issue](https://github.com/kenneth474/OrthodoxChristainApp/issues),
+- **User stories:** every goal is a GitHub [Issue](https://github.com/kenneth474/OrthodoxChristianApp/issues),
   written as *"As a …, I want …, so that …"* with a checklist of acceptance criteria.
-  Each one has a phase [milestone](https://github.com/kenneth474/OrthodoxChristainApp/milestones)
+  Each one has a phase [milestone](https://github.com/kenneth474/OrthodoxChristianApp/milestones)
   and labels such as `parishes` or `accounts`.
-- **Board:** the [Projects](https://github.com/kenneth474/OrthodoxChristainApp/projects) tab shows
+- **Board:** the [Projects](https://github.com/kenneth474/OrthodoxChristianApp/projects) tab shows
   every story in **Todo → In Progress → Done** columns.
 - **Done means done:** put `Closes #12` (the Issue's number) in a commit message.
   When it's pushed, GitHub closes Issue #12 and the board moves it to **Done**.
