@@ -57,7 +57,7 @@ public class SocialSignInHandler implements AuthenticationSuccessHandler {
             if (session != null) {
                 session.invalidate();
             }
-            response.sendRedirect("/login.html?error=social");
+            response.sendRedirect("/sign-in?error=social");
         }
     }
 }

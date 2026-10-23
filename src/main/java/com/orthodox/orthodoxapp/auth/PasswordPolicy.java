@@ -16,9 +16,10 @@ import java.util.Set;
  *   - not be a common word dressed up with numbers, like "Password2026!"
  *
  * check(...) returns EVERY broken rule at once, so the sign-up page can list
- * them all instead of making people fix one at a time. login.html shows the
- * first five rules as a live checklist while you type; this class is the
- * final word, because a browser can be tricked but the server can't.
+ * them all instead of making people fix one at a time. The sign-in screen
+ * (frontend/src/pages/SignInPage.tsx) shows the first five rules as a live
+ * checklist while you type; this class is the final word, because a browser
+ * can be tricked but the server can't.
  *
  * "final" class + private constructor = a toolbox of static methods that's
  * never turned into objects (like java.lang.Math).

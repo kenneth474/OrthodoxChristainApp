@@ -61,9 +61,14 @@ public class SecurityConfig {
             // Anything not listed needs a signed-in user ("deny by default"), so
             // a new page or endpoint is private until we decide otherwise.
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/index.html", "/login.html", "/account.html",
-                        "/bible.html", "/prayers.html",
-                        "/css/**", "/js/**", "/data/**", "/favicon.ico", "/error").permitAll()
+                // The React app: its page, its files (built by Vite into assets/),
+                // the home-screen icons, and the prayer book data. Every screen's
+                // address is public too; screens that need an account ask the API,
+                // which answers 401 when you're not signed in.
+                .requestMatchers("/", "/index.html", "/assets/**", "/icons/**", "/data/**",
+                        "/manifest.webmanifest", "/favicon.ico", "/error").permitAll()
+                .requestMatchers("/bible", "/bible/**", "/prayers", "/prayers/**",
+                        "/profile", "/sign-in").permitAll()
                 .requestMatchers("/api/today", "/api/day/**", "/api/bible/**", "/api/auth/**").permitAll()
                 .anyRequest().authenticated())
 
@@ -86,10 +91,10 @@ public class SecurityConfig {
         // Google/Apple sign-in, only if at least one is set up in secrets.properties.
         if (social.anyEnabled()) {
             http.oauth2Login(oauth -> oauth
-                .loginPage("/login.html")
+                .loginPage("/sign-in")   // the React app's sign-in screen
                 .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(appleFormPost(social)))
                 .successHandler(socialSignInHandler)
-                .failureUrl("/login.html?error=social"));
+                .failureUrl("/sign-in?error=social"));
         }
         return http.build();
     }

@@ -34,6 +34,10 @@ application-local.properties
 secrets.properties
 *.p8
 
+# The built React app. "npm run build" (in frontend/) creates this folder from
+# the code in frontend/src, so it's never edited or committed by hand.
+/src/main/resources/static/
+
 # The development database (user accounts on this computer). The leading "/"
 # means only the data/ folder at the top of the project, not others such as
 # src/main/resources/static/data/ (the prayer book).
