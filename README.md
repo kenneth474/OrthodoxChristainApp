@@ -65,7 +65,8 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 | **Email & text messages** | Spring Mail (SMTP) and Twilio | Verification codes; printed in the terminal while developing |
 | **Maps & location** *(planned)* | Browser Geolocation API + OpenStreetMap | "Near me" parish search and maps |
 | **Cache** *(planned)* | Redis + Spring Cache | Each day's calendar data, cached until midnight |
-| **Frontend** *(planned)* | React (Vite) as a PWA | Dashboard UI that runs in any browser and installs to a home screen |
+| **Frontend** | React 19 + TypeScript, built with Vite; React Router for the tabs | One app for every screen; adds to a phone's home screen and opens full screen |
+| **Frontend tests** | Vitest (with jsdom) | Tests the helpers: dates, HTML cleaning, reading aloud, prayer book |
 | **Mobile apps** *(planned)* | Capacitor | Wraps the React app as native Android and iOS apps |
 | **Dev tools** | VS Code, Spring Boot DevTools, Git/GitHub | Editing, auto-restart on save, version control |
 
@@ -79,9 +80,9 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
  │  Web / PWA / Android /   │ ─────▶ │                              │ ─────▶ │  orthocal.info   │
  │  iOS (React + Capacitor) │ ◀───── │  • CalendarController        │ ◀───── │  Greek tradition │
  │                          │        │  • CalendarService           │        │  New calendar    │
- │  Today: preview pages    │        │  • OrthocalClient            │        └──────────────────┘
- │  (static/index.html,     │        │  • AuthController, accounts  │  ────▶  Google / Apple sign-in,
- │   login.html, account)   │        │  • Parishes, news (planned)  │         email (SMTP), texts (Twilio)
+ │  Today: the React app    │        │  • OrthocalClient            │        └──────────────────┘
+ │  (frontend/), on any     │        │  • AuthController, accounts  │  ────▶  Google / Apple sign-in,
+ │  browser or home screen  │        │  • Bible, parishes (planned) │         email (SMTP), texts (Twilio)
  └──────────────────────────┘        └──────┬───────────────┬───────┘
                                             │               │
                                      ┌──────▼─────┐   ┌─────▼──────┐
@@ -101,14 +102,15 @@ CalendarController  ──▶  CalendarService  ──▶  OrthocalClient  ─�
 ```
 
 **How a request flows:**
-1. The browser opens `http://localhost:8080`, which loads the preview page.
-2. The page calls our backend, e.g. `/api/day/2026/12/25`.
+1. The browser opens `http://localhost:8080`, which loads the React app
+   (`index.html` plus its JavaScript, built from `frontend/`).
+2. The Home screen (`frontend/src/pages/HomePage.tsx`) calls our backend, e.g. `/api/day/2026/12/25`.
 3. `CalendarController` passes the date to `CalendarService`.
 4. `CalendarService` asks `OrthocalClient`, which fetches Orthocal's JSON.
    Jackson turns it into an `OrthocalDay` record (a mirror of Orthocal's format).
 5. `CalendarService` converts that into our own `LiturgicalDay` record and works
    out the `FastingRule`.
-6. `LiturgicalDay` goes back to the page as JSON, and the page draws the cards.
+6. `LiturgicalDay` goes back as JSON, and React draws the cards.
 7. If anything goes wrong, `ApiExceptionHandler` sends a clear JSON error.
 
 ### About the calendar data
@@ -157,8 +159,14 @@ OrthodoxChristianApp/
 ├── secrets.example.properties       # Template for secrets.properties (keys; never committed)
 ├── README.md                        # This file
 ├── .gitignore                       # Files Git should not track (build output, secrets, data/)
+├── frontend/                        # The React app (all the screens); see frontend/README.md
+│   ├── src/pages/                   # Home, Bible, Prayers, Profile, Sign-in
+│   ├── src/components/              # Tab bar, reading-aloud player, shared pieces
+│   ├── src/lib/                     # Helpers: dates, reading aloud, HTML cleaning, prayers
+│   ├── public/data/prayers.json     # The prayers themselves (edit this to add or fix a prayer)
+│   └── public/icons/                # The app icon (gold Orthodox cross)
 ├── .github/
-│   ├── workflows/ci.yml             # GitHub Actions: build and test on every push
+│   ├── workflows/ci.yml             # GitHub Actions: test and build the React app and the backend on every push
 │   ├── workflows/backlog.yml        # GitHub Actions: turns backlog.json into Issues
 │   ├── backlog.json                 # The app's goals, written as user stories
 │   └── ISSUE_TEMPLATE/              # Forms for new user stories and bug reports
@@ -177,6 +185,7 @@ OrthodoxChristianApp/
     │   ├── ReadingSelector.java         # Picks the day's readings the way the Archdiocese lists them
     │   ├── ScriptureBooks.java          # "Galatians 1.11-19" -> "St. Paul's Letter to the Galatians 1:11-19"
     │   ├── ApiExceptionHandler.java     # Turns errors into clear JSON replies
+    │   ├── SpaController.java           # Sends the React app for /bible, /prayers, /profile... (bookmarks work)
     │   ├── account/                     # Who you are: AppUser (database table), your account settings
     │   │   ├── AppUser.java, AppUserRepository.java, TwoFactorMethod.java, TextSize.java, Theme.java
     │   │   ├── AccountController.java   # /api/account/...: profile, photo, appearance, phone, verification, two-step
@@ -193,19 +202,8 @@ OrthodoxChristianApp/
     │   └── notify/                      # Sending emails and texts (or printing them while developing)
     └── resources/
         ├── application.properties       # App settings (port, database, secrets file)
-        └── static/
-            ├── index.html               # Home tab: today's calendar (replaced by React later)
-            ├── bible.html               # Bible tab: books -> chapters -> text
-            ├── prayers.html             # Prayers tab: the prayer book
-            ├── login.html               # Sign in / create account / enter code
-            ├── account.html             # Profile tab: your account and two-step verification
-            ├── data/prayers.json        # The prayers themselves (edit this to add or fix a prayer)
-            ├── js/tabs.js               # The Home / Bible / Prayers / Profile tab bar
-            ├── css/reading.css          # Shared look of the Bible and Prayers tabs
-            ├── css/theme.css            # Light and dark colours, text sizes (every page)
-            ├── js/appearance.js         # Applies your text size and theme before a page draws
-            ├── js/listen.js             # Reads readings and lives aloud with the device's voice
-            ├── css/forms.css, js/api.js # Shared look and fetch helper for the sign-in and account pages
+        ├── bible/                       # The Bible text (public domain); see its README.md
+        └── static/                      # The BUILT React app (made by "npm run build"; not in Git)
 ```
 
 Every code file has comments explaining what each part does.
@@ -222,6 +220,8 @@ Every code file has comments explaining what each part does.
   - *Extension Pack for Java* (Microsoft)
   - *Spring Boot Extension Pack* (VMware/Broadcom)
 - **Git** (to save your progress and push to GitHub).
+- **Node.js LTS** (runs the React app's tools). Check with `node --version`;
+  install from [nodejs.org](https://nodejs.org) if needed.
 
 You don't need to install Maven. VS Code's Java extension reads `pom.xml` and
 downloads the libraries itself, and the **Maven Wrapper** runs Maven from a
@@ -239,7 +239,22 @@ runs every automated test (the first run downloads Maven, about 10 MB).
 2. Wait 1–2 minutes the first time. The Java extension downloads Spring Boot
    (watch the status bar at the bottom). Trust the workspace if asked.
 
-### 3. Run it
+### 3. Build the React app (once, and after changing it)
+
+In VS Code's terminal (**Ctrl+`**):
+
+```powershell
+cd frontend
+npm install
+npm run build
+cd ..
+```
+
+`npm install` downloads the React app's packages (only needed the first time
+and when they change). `npm run build` builds the app into
+`src/main/resources/static`, where the backend serves it.
+
+### 4. Run it
 
 Use any of these:
 
@@ -251,14 +266,14 @@ When the terminal shows `Started OrthodoxappApplication`, open:
 
 | URL | What you'll see |
 |---|---|
-| http://localhost:8080 | The preview page (use ‹ Prev / Next › or the date picker) |
-| http://localhost:8080/?date=2026-12-25 | The preview page for a specific date |
+| http://localhost:8080 | The app, on the Home tab (use ‹ Prev / Next › or the date picker) |
+| http://localhost:8080/?date=2026-12-25 | Home for a specific date |
+| http://localhost:8080/bible/PSA/50 | The Bible tab (here at Psalm 50) |
+| http://localhost:8080/prayers/morning | The Prayers tab (here at Morning Prayers) |
+| http://localhost:8080/profile | The Profile tab (sign in first) |
+| http://localhost:8080/sign-in | Sign in, or create an account |
 | http://localhost:8080/api/today | Today's raw JSON from our backend |
 | http://localhost:8080/api/day/2026/12/25 | Raw JSON for any date |
-| http://localhost:8080/login.html | Sign in, or create an account |
-| http://localhost:8080/account.html | Your account: verify email/phone, two-step verification |
-| http://localhost:8080/bible.html#PSA.50 | The Bible tab (here at Psalm 50) |
-| http://localhost:8080/prayers.html#morning | The Prayers tab (here at Morning Prayers) |
 | http://localhost:8080/api/bible/JOH/3 | Raw JSON for one Bible chapter |
 
 To stop the app, click the red ■ square in the toolbar or press **Shift+F5**.
@@ -268,7 +283,7 @@ is printed in the VS Code terminal where the app runs (the **Debug Console**
 tab if you started it with F5), in a box marked `EMAIL (development mode...)`
 or `TEXT MESSAGE (development mode...)`. The pages say so too.
 
-### 4. Setting up sign-in, email and text messages
+### 5. Setting up sign-in, email and text messages
 
 Everything here is optional. Keys go in **`secrets.properties`**, which Git
 ignores. Copy `secrets.example.properties` to `secrets.properties`, fill in a
@@ -287,15 +302,37 @@ section, and restart the app. The example file explains each setting.
 
 The app is set up so you can watch changes appear while it runs:
 
-1. **Start the app once** (F5) and leave it running.
-2. Open **http://localhost:8080** in your browser and keep the tab open.
-3. When a file changes (whether you edit it or Claude does):
+1. **Start the backend** (F5) and leave it running.
+2. **Start the React dev server** in a second terminal:
+   ```powershell
+   cd frontend
+   npm run dev
+   ```
+3. Open **http://localhost:5173** (not 8080) and keep the tab open.
+4. When a file changes (whether you edit it or Claude does):
+   - **React files (`frontend/src/...`):** the page updates by itself, instantly.
    - **Java files:** VS Code recompiles on save, and **Spring Boot DevTools**
-     restarts the app in about a second. Watch the terminal for a new
-     `Started…` line, then refresh the browser.
-   - **The preview page (`index.html`):** just refresh the browser.
-4. Use **VS Code's Source Control panel** (Ctrl+Shift+G) to see exactly what
+     restarts the backend in about a second.
+5. Use **VS Code's Source Control panel** (Ctrl+Shift+G) to see exactly what
    changed in each file. Green lines are added; red lines are removed.
+
+### On your iPhone (or any phone)
+
+Your phone must be on the **same Wi-Fi** as your computer.
+
+1. Find your computer's address: run `ipconfig` and look for **IPv4 Address**
+   under "Wireless LAN adapter Wi-Fi" (for example `192.168.4.49`).
+2. In Safari on the phone, open one of:
+   - `http://192.168.4.49:8080`: the built app (after `npm run build`), or
+   - `http://192.168.4.49:5173`: the live dev server (updates as code changes).
+     The first time, Windows asks whether Node.js may use the network: choose
+     **Allow**.
+3. To use it like an app: tap **Share** → **Add to Home Screen**. It gets the
+   gold cross icon and opens full screen.
+
+These addresses use `http`, not `https`. That's fine for trying things out;
+features that need `https` (location for "parishes near me", Google sign-in on
+the phone, working offline) will come when the app goes online (Issue #25).
 
 **Tip:** Commit after each working step (Source Control → type a message →
 ✓ Commit → Sync). Your GitHub history then becomes a timeline of the build.
@@ -355,7 +392,7 @@ The app is set up so you can watch changes appear while it runs:
 - [ ] Read and download the day's service texts in the app (waiting on permission)
 
 **Phase 5: Real app and every platform**
-- [ ] React frontend (Vite) replacing the preview page
+- [x] React frontend (Vite + TypeScript) replacing the preview pages; adds to a phone's home screen
 - [ ] Redis caching, `@Scheduled` 6:00 AM summaries and push notifications
 - [ ] PWA install support, then Android/iOS apps with Capacitor
 - [ ] Deploy (backend, database and frontend hosted online)
@@ -372,6 +409,8 @@ The app is set up so you can watch changes appear while it runs:
 | I want an empty database | Stop the app and delete the `data/` folder. It's recreated on the next start. |
 | Red squiggles everywhere after opening | The Java extension is still downloading libraries. Wait, or run **Ctrl+Shift+P → Java: Clean Java Language Server Workspace**. |
 | Page says *"Could not load this day"* | Make sure the app is running and you're online. Check the VS Code terminal for an error. |
+| http://localhost:8080 shows a blank page or "Not Found" | Build the React app: `cd frontend`, `npm install`, `npm run build`, then restart the backend. |
+| Phone can't open the app | Same Wi-Fi as the computer? Right address (`ipconfig`)? For port 5173, allow Node.js through Windows Firewall when asked. |
 | Startup error about `/api/today` being mapped twice | An old copy of `TodayController.java` still has code in it. It should contain only comments; you can delete it. |
 | `java -version` shows 11 or older | Install Java 17+ from adoptium.net, then restart VS Code. |
 
