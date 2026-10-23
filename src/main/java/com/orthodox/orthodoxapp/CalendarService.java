@@ -79,12 +79,16 @@ public class CalendarService {
                 raw.feastLevelDesc(),
                 orEmpty(raw.feasts()));
 
+        // Keep only the readings the Archdiocese lists for the day (see
+        // ReadingSelector for the rules), then convert them.
         // STREAMS: a compact way to transform every item in a list.
         //   .stream()      -> start processing the list item by item
         //   .map(...)      -> convert each item into something else
         //   .toList()      -> collect the results into a new list
         // "this::convertReading" means "call convertReading on each item".
-        List<LiturgicalDay.Reading> readings = orEmpty(raw.readings()).stream()
+        List<LiturgicalDay.Reading> readings = ReadingSelector
+                .select(orEmpty(raw.readings()), date, raw.paschaDistance(), raw.feastLevel())
+                .stream()
                 .map(this::convertReading)
                 .toList();
 
@@ -110,9 +114,12 @@ public class CalendarService {
                 .map(v -> new LiturgicalDay.Verse(v.chapter(), v.verse(), v.content(), v.paragraphStart()))
                 .toList();
 
+        ScriptureBooks.Parts parts = ScriptureBooks.split(reading.display());
         return new LiturgicalDay.Reading(
                 reading.source(),
-                reading.display(),
+                parts.book(),
+                parts.chapters(),
+                ScriptureBooks.shortReference(reading.display()),
                 reading.description() == null ? "" : reading.description(),
                 verses);
     }

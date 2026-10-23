@@ -67,6 +67,10 @@ public record OrthocalDay(
         // The tone (1-8) of the week, used in services.
         @JsonProperty("tone") int tone,
 
+        // Days from this year's Pascha (Easter): 0 = Pascha, -7 = Palm Sunday,
+        // 49 = Pentecost. ReadingSelector uses it to spot movable feasts.
+        @JsonProperty("pascha_distance") int paschaDistance,
+
         // Saints commemorated today.
         @JsonProperty("saints") List<String> saints,
 

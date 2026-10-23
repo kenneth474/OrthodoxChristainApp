@@ -80,6 +80,31 @@
       "done": true
     },
     {
+      "title": "Readings match the Archdiocese",
+      "story": "As an Antiochian Orthodox Christian, I want the app to show the same daily readings as antiochian.org, so that I read what is read in church.",
+      "criteria": [
+        "Only the Divine Liturgy's Epistle and Gospel (no Vespers or Matins readings)",
+        "A saint's or feast's readings replace the weekday ones; on Sundays the Sunday Gospel stays",
+        "References written like antiochian.org, e.g. \"St. Paul's Letter to the Galatians 1:11-19\"",
+        "Checked against 47 days on antiochian.org (all matched)"
+      ],
+      "labels": ["user story", "liturgics"],
+      "milestone": "Phase 1: Liturgics",
+      "done": true
+    },
+    {
+      "title": "Listen to the readings and lives of the saints",
+      "story": "As a parishioner, I want the app to read the scripture readings and saints' lives aloud, so that I can listen while driving, cooking or resting my eyes.",
+      "criteria": [
+        "A Listen button on every reading and every saint's life",
+        "Uses the device's own built-in voices only, never an online AI voice service",
+        "Pause, resume, stop, reading speed and voice choice"
+      ],
+      "labels": ["user story", "liturgics"],
+      "milestone": "Phase 1: Liturgics",
+      "done": true
+    },
+    {
       "title": "Automatic build and tests on every push",
       "story": "As the developer, I want GitHub to build the app and run the tests every time I push, so that I find out right away if something breaks.",
       "criteria": [

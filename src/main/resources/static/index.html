@@ -148,6 +148,47 @@
         .pill.avoid { background: var(--soft-red); color: var(--strict); text-decoration: line-through; }
         .pill.allowed { background: var(--soft-green); color: var(--free); }
 
+        /* ---- "Listen" buttons and the reading-aloud player (js/listen.js) ---- */
+        .listen {
+            font-family: system-ui, sans-serif;
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            margin: 2px 0 8px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: var(--card);
+            color: var(--gold);
+            cursor: pointer;
+        }
+        .listen:hover { border-color: var(--gold); }
+        .player {
+            position: fixed;
+            left: 50%;
+            bottom: 12px;
+            transform: translateX(-50%);
+            width: min(640px, calc(100% - 24px));
+            background: var(--card);
+            border: 1px solid var(--gold);
+            border-radius: 12px;
+            padding: 10px 14px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+            font-family: system-ui, sans-serif;
+            font-size: 0.85rem;
+            z-index: 10;
+        }
+        .player-title { font-weight: 600; margin-bottom: 6px; }
+        .player-controls { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+        .player button, .player select {
+            font: inherit;
+            padding: 4px 10px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--ink);
+        }
+        .player-note { margin-top: 6px; color: var(--muted); }
+        main { padding-bottom: 120px; } /* room for the player bar */
+
         /* ---- Service texts card ---- */
         .button-link {
             display: inline-block;
@@ -231,6 +272,8 @@
     </footer>
 </main>
 
+<!-- Reads readings and saints' lives aloud with the device's own voice. -->
+<script src="/js/listen.js"></script>
 <script>
     // ===============================================================
     // SMALL HELPERS
@@ -321,10 +364,20 @@
             </section>`;
     }
 
+    // A "Listen" button. data-kind and data-index tell the click handler (at
+    // the end of the script) which reading or life to read aloud.
+    function listenButton(kind, index) {
+        return Listen.supported
+            ? `<button type="button" class="listen" data-kind="${kind}" data-index="${index}">🔊 Listen</button>`
+            : '';
+    }
+
+    // The readings as the Archdiocese lists them: the Liturgy's Epistle and
+    // Gospel (the backend's ReadingSelector chooses them).
     function readingsCard(readings) {
         if (readings.length === 0) return '';
 
-        const items = readings.map(reading => {
+        const items = readings.map((reading, index) => {
             // Group verses into paragraphs, starting a new <p> where
             // the verse says paragraphStart is true.
             let html = '';
@@ -336,11 +389,13 @@
             });
             html += '</p>';
 
+            // e.g. "St. Paul's Letter to the Galatians 1:11-19", labelled "Epistle · St James"
+            const heading = [reading.book, reading.chapters].filter(Boolean).join(' ');
             const label = [reading.service, reading.note].filter(Boolean).join(' · ');
             return `
                 <details>
-                    <summary>${escapeHtml(reading.reference)}<span class="service">${escapeHtml(label)}</span></summary>
-                    <div class="passage">${html}</div>
+                    <summary>${escapeHtml(heading)}<span class="service">${escapeHtml(label)}</span></summary>
+                    <div class="passage">${listenButton('reading', index)}${html}</div>
                 </details>`;
         }).join('');
 
@@ -370,10 +425,10 @@
 
     function livesCard(lives) {
         if (lives.length === 0) return '';
-        const items = lives.map(life => `
+        const items = lives.map((life, index) => `
             <details>
                 <summary>${escapeHtml(life.title)}</summary>
-                <div class="life">${sanitizeHtml(life.html)}</div>
+                <div class="life">${listenButton('life', index)}${sanitizeHtml(life.html)}</div>
             </details>`).join('');
         return `<section class="card"><h2>Lives of the Saints</h2>${items}</section>`;
     }
@@ -383,6 +438,7 @@
     // ===============================================================
 
     let currentDate; // the date being shown, as "YYYY-MM-DD"
+    let currentDay;  // the data for that date, for the Listen buttons
 
     async function showDate(iso) {
         currentDate = iso;
@@ -410,6 +466,8 @@
 
             // Ignore the reply if the user already clicked to a different date.
             if (iso !== currentDate) return;
+            currentDay = day;
+            Listen.stop(); // a new day: stop reading the old one
 
             const dateLabel = fromIso(day.date).toLocaleDateString('en-US', {
                 weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
@@ -439,6 +497,31 @@
                 <p class="status">Is the app running in VS Code, and are you online?</p>`;
         }
     }
+
+    // ---- Listen buttons ----
+    // One "click" listener on the whole content area handles every Listen
+    // button, even ones added later ("event delegation").
+    document.getElementById('content').addEventListener('click', event => {
+        const button = event.target.closest('button.listen');
+        if (!button || !currentDay) return;
+        const index = Number(button.dataset.index);
+
+        if (button.dataset.kind === 'reading') {
+            const reading = currentDay.readings[index];
+            // Announce it the way a reader does in church.
+            const intro = reading.service === 'Gospel'
+                ? `The reading from the Holy Gospel according to St. ${reading.book}.`
+                : `The reading from ${reading.book}.`;
+            const text = reading.verses.map(verse => verse.text).join(' ');
+            Listen.play(`${reading.book} ${reading.chapters}`, `${intro} ${text}`);
+        } else {
+            const life = currentDay.lives[index];
+            // Turn the saint's life from HTML into plain text, keeping paragraph breaks as pauses.
+            const doc = new DOMParser().parseFromString(sanitizeHtml(life.html), 'text/html');
+            const text = [...doc.body.childNodes].map(node => node.textContent.trim()).filter(Boolean).join('. ');
+            Listen.play(life.title, `${life.title}. ${text}`);
+        }
+    });
 
     // ---- Wire up the buttons ----
     document.getElementById('prev').addEventListener('click', () => showDate(addDays(currentDate, -1)));

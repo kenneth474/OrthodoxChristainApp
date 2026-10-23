@@ -72,12 +72,16 @@ public record LiturgicalDay(
     /**
      * One scripture reading.
      *
-     * @param service    where it is read, e.g. "Liturgy"
-     * @param reference  e.g. "Luke 9.49-56"
-     * @param note       extra note such as "Saint" (may be empty)
+     * @param service    where it is read, e.g. "Epistle" or "Gospel"
+     * @param book       the book's full title, as the Archdiocese writes it,
+     *                   e.g. "St. Paul's Letter to the Galatians" or "Matthew"
+     * @param chapters   chapter and verses, e.g. "1:11-19"
+     * @param reference  the short form, e.g. "Galatians 1:11-19"
+     * @param note       whose reading it is, e.g. "St James" (empty for the ordinary daily reading)
      * @param verses     the full text
      */
-    public record Reading(String service, String reference, String note, List<Verse> verses) {
+    public record Reading(String service, String book, String chapters, String reference,
+                          String note, List<Verse> verses) {
     }
 
     /** One verse: its number and words, and whether a paragraph starts here. */

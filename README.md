@@ -24,8 +24,9 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 | Feature | What it does | Status |
 |---|---|---|
 | **Daily liturgical calendar** | Feast or saint, week title, tone and commemorations for any date | ✅ Working |
-| **Scripture readings** | Epistle and Gospel (and other services) with full verse text | ✅ Working |
+| **Scripture readings** | The day's Epistle and Gospel with full verse text, matching antiochian.org | ✅ Working |
 | **Lives of the saints** | The story of each saint or feast for the day | ✅ Working |
+| **Listen** | Readings and saints' lives read aloud with the device's own voice (no online AI voices); pause, speed, voice | ✅ Working |
 | **Fasting rule engine** | Maps each day to a clear `FastingRule` (strict, wine only, wine & oil, fish, meat fast, fast-free) | ✅ Working |
 | **Find a parish near me** | Search churches by your location, city or ZIP, with distance and directions | 🔜 Next |
 | **Accounts** | Sign up and sign in with email and password; optional phone number | ✅ Working |
@@ -114,6 +115,12 @@ CalendarController  ──▶  CalendarService  ──▶  OrthocalClient  ─�
   Archdiocese follows Greek practice for fasting and commemorations.
 - We use the **New calendar** (`/gregorian/`), so fixed feasts such as
   Christmas fall on the civil date.
+- Orthocal lists every reading of the day (Vespers, Matins, weekday and
+  saints' readings). `ReadingSelector` keeps the ones **antiochian.org** lists:
+  the Liturgy's Epistle and Gospel, with a saint's or feast's readings replacing
+  the weekday ones (on Sundays the Sunday Gospel stays). Checked against 47 days
+  on antiochian.org. `ScriptureBooks` writes references their way, e.g.
+  "St. Paul's Letter to the Galatians 1:11-19".
 - `fast_level` names the **fasting season** (e.g. Nativity Fast). It is *not* a
   strictness scale. Strictness comes from `fast_exception` (a code from 0 to
   11), which `FastingRule.from(...)` turns into a clear rule.
@@ -165,6 +172,8 @@ OrthodoxChristianApp/
     │   ├── OrthocalDay.java             # Mirror of Orthocal's JSON (input)
     │   ├── LiturgicalDay.java           # Our clean format sent to the frontend (output)
     │   ├── FastingRule.java             # Enum: STRICT, WINE_ONLY, WINE_AND_OIL, ...
+    │   ├── ReadingSelector.java         # Picks the day's readings the way the Archdiocese lists them
+    │   ├── ScriptureBooks.java          # "Galatians 1.11-19" -> "St. Paul's Letter to the Galatians 1:11-19"
     │   ├── ApiExceptionHandler.java     # Turns errors into clear JSON replies
     │   ├── account/                     # Who you are: AppUser (database table), your account settings
     │   │   ├── AppUser.java, AppUserRepository.java, TwoFactorMethod.java, TextSize.java, Theme.java
@@ -188,6 +197,7 @@ OrthodoxChristianApp/
             ├── account.html             # Your account and two-step verification
             ├── css/theme.css            # Light and dark colours, text sizes (every page)
             ├── js/appearance.js         # Applies your text size and theme before a page draws
+            ├── js/listen.js             # Reads readings and lives aloud with the device's voice
             ├── css/forms.css, js/api.js # Shared look and fetch helper for the sign-in and account pages
 ```
 
