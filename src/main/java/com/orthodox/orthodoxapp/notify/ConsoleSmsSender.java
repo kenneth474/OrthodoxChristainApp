@@ -20,4 +20,9 @@ public class ConsoleSmsSender implements SmsSender {
                 {}
                 =========================================================================""", toPhone, body);
     }
+
+    @Override
+    public boolean developmentMode() {
+        return true;
+    }
 }

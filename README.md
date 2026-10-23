@@ -31,7 +31,10 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 | **Accounts** | Sign up and sign in with email and password; optional phone number | ✅ Working |
 | **Strong passwords** | 12+ characters with upper and lower case, a number and a symbol; live checklist; lockout after 5 wrong tries | ✅ Working |
 | **Two-step verification** | A 6-digit code by email or text message after your password | ✅ Working (codes print in the terminal until [email/SMS are set up](#4-setting-up-sign-in-email-and-text-messages)) |
-| **Sign in with Google / Apple** | One-tap sign-in that creates or links your account | 🔧 Built: needs [keys](#4-setting-up-sign-in-email-and-text-messages) |
+| **Sign in with Google / Apple** | One-tap sign-in that creates or links your account (buttons show "not set up yet" until keys are added) | 🔧 Built: needs [keys](#4-setting-up-sign-in-email-and-text-messages) |
+| **Profile** | Profile photo (cropped, resized, location data stripped), patron saint, name day (with a greeting on the day), home parish | ✅ Working |
+| **Text size & dark mode** | Normal / Large / Larger text; match device, light or dark theme; saved to your account | ✅ Working |
+| **Service texts (PDF)** | Each day links to the Archdiocese's Online Liturgical Guide (Orthros, Divine Liturgy, Vespers) | 🔗 Linked; in-app viewer waiting on permission |
 | **Home parish & bookmarks** | Choose a home parish, bookmark saints and feasts | 🔜 Planned |
 | **Church news** | Archdiocese and parish news articles, managed by admins | 🔜 Planned |
 | **Parish events** | Parish admins post events (e.g. *"Vespers moved to 6:30 PM"*) | 🔜 Planned |
@@ -164,9 +167,10 @@ OrthodoxChristianApp/
     │   ├── FastingRule.java             # Enum: STRICT, WINE_ONLY, WINE_AND_OIL, ...
     │   ├── ApiExceptionHandler.java     # Turns errors into clear JSON replies
     │   ├── account/                     # Who you are: AppUser (database table), your account settings
-    │   │   ├── AppUser.java, AppUserRepository.java, TwoFactorMethod.java
-    │   │   ├── AccountController.java   # /api/account/...: name, phone, verification, two-step
-    │   │   └── AccountService.java, AccountView.java
+    │   │   ├── AppUser.java, AppUserRepository.java, TwoFactorMethod.java, TextSize.java, Theme.java
+    │   │   ├── AccountController.java   # /api/account/...: profile, photo, appearance, phone, verification, two-step
+    │   │   ├── AccountService.java, AccountView.java
+    │   │   └── ProfilePhoto*.java       # Photo table, and checking/cropping/re-saving uploads
     │   ├── auth/                        # Signing in
     │   │   ├── SecurityConfig.java      # Who can see what, CSRF, sign-out, Google/Apple
     │   │   ├── AuthController.java      # /api/auth/...: register, sign in, codes
@@ -182,7 +186,9 @@ OrthodoxChristianApp/
             ├── index.html               # Today's calendar (replaced by React later)
             ├── login.html               # Sign in / create account / enter code
             ├── account.html             # Your account and two-step verification
-            ├── css/forms.css, js/api.js # Shared look and fetch helper for those pages
+            ├── css/theme.css            # Light and dark colours, text sizes (every page)
+            ├── js/appearance.js         # Applies your text size and theme before a page draws
+            ├── css/forms.css, js/api.js # Shared look and fetch helper for the sign-in and account pages
 ```
 
 Every code file has comments explaining what each part does.
@@ -238,8 +244,9 @@ When the terminal shows `Started OrthodoxappApplication`, open:
 To stop the app, click the red ■ square in the toolbar or press **Shift+F5**.
 
 **Where are my codes?** Until email and texts are set up (below), every code
-is printed in the VS Code terminal where the app runs, in a box marked
-`EMAIL (development mode...)` or `TEXT MESSAGE (development mode...)`.
+is printed in the VS Code terminal where the app runs (the **Debug Console**
+tab if you started it with F5), in a box marked `EMAIL (development mode...)`
+or `TEXT MESSAGE (development mode...)`. The pages say so too.
 
 ### 4. Setting up sign-in, email and text messages
 
@@ -313,12 +320,16 @@ The app is set up so you can watch changes appear while it runs:
 - [ ] Sign in with Google (built; needs keys) and Apple (built; needs Apple Developer account and HTTPS)
 - [ ] Real email and text delivery (built; needs SMTP and Twilio settings)
 - [ ] Reset a forgotten password
+- [x] Profile: photo, patron saint, name day greeting, home parish (free text for now)
+- [x] Text size and dark mode
 - [ ] Roles: member, parish admin, site admin
-- [ ] Profile: home parish, bookmarked saints and feasts
+- [ ] Home parish linked to the parish finder; bookmarked saints and feasts
 
 **Phase 4: Content** *(antiochian.org: Church News, Orthodox Prayers, Dioceses, Ministries, About)*
 - [ ] News articles and parish events with an admin editor (CRUD)
 - [ ] Prayer library, diocese and ministry pages
+- [x] Link each day to the Archdiocese's Online Liturgical Guide (service texts)
+- [ ] Read and download the day's service texts in the app (waiting on permission)
 
 **Phase 5: Real app and every platform**
 - [ ] React frontend (Vite) replacing the preview page

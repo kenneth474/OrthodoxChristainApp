@@ -1,17 +1,11 @@
 /*
   forms.css: shared look for the sign-in and account pages.
-  Same colours and fonts as the home page (index.html), so the app feels like one place.
+  The colours come from theme.css (loaded first), the same ones the home page
+  uses, so the app feels like one place and dark mode works everywhere.
 */
 :root {
-    --bg: #f6f1e7;
-    --card: #fffdf8;
-    --ink: #2b2118;
-    --muted: #7a6a58;
-    --gold: #b08a3e;
-    --gold-dark: #8a6a2a;
-    --line: #e4d9c4;
-    --error: #8b1e1e;
-    --ok: #2f6b3a;
+    --error: var(--strict);
+    --ok: var(--free);
 }
 
 * { box-sizing: border-box; }
@@ -37,7 +31,7 @@ main.narrow {
 h1 { font-size: 1.8rem; font-weight: normal; margin: 4px 0 18px; }
 
 .back { margin: 0; font-family: system-ui, sans-serif; font-size: 0.85rem; }
-a { color: var(--gold-dark); }
+a { color: var(--gold); }
 
 .card {
     background: var(--card);
@@ -63,7 +57,7 @@ label {
     font-family: system-ui, sans-serif;
     font-size: 0.9rem;
 }
-input[type=email], input[type=password], input[type=tel], input[type=text], input:not([type]) {
+input[type=email], input[type=password], input[type=tel], input[type=text], input[type=date], input:not([type]) {
     display: block;
     width: 100%;
     margin-top: 4px;
@@ -72,7 +66,7 @@ input[type=email], input[type=password], input[type=tel], input[type=text], inpu
     font-size: 1rem;
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: #fff;
+    background: var(--input-bg);
     color: var(--ink);
 }
 input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
@@ -100,16 +94,16 @@ button:hover { border-color: var(--gold); }
 button:disabled { opacity: 0.6; cursor: wait; }
 button.primary {
     width: 100%;
-    background: var(--gold-dark);
-    border-color: var(--gold-dark);
-    color: #fff;
+    background: var(--primary-bg);
+    border-color: var(--primary-bg);
+    color: var(--primary-ink);
 }
-button.primary:hover { background: #75591f; }
+button.primary:hover { filter: brightness(0.92); }
 button.link {
     border: none;
     background: none;
     padding: 6px 0;
-    color: var(--gold-dark);
+    color: var(--gold);
     text-decoration: underline;
 }
 
@@ -138,9 +132,13 @@ button.link {
     color: #1f1f1f;
     text-decoration: none;
     font-family: system-ui, sans-serif;
+    cursor: pointer;
 }
 .social-button:hover { border-color: var(--gold); }
-.social-button.apple { background: #000; border-color: #000; color: #fff; }
+.social-button.apple { background: #000; border-color: #555; color: #fff; }
+/* A provider that isn't set up yet: shown, but greyed out. */
+.social-button.disabled { opacity: 0.5; cursor: not-allowed; }
+.social-button .soon { font-size: 0.8rem; }
 .divider {
     display: flex;
     align-items: center;
@@ -160,8 +158,9 @@ button.link {
     font-size: 0.9rem;
     margin: 0 0 14px;
 }
-.message.error { background: #f3e3e3; color: var(--error); }
-.message.info { background: #e3efe4; color: var(--ok); }
+.message.error { background: var(--soft-red); color: var(--error); }
+.message.info { background: var(--soft-green); color: var(--ok); }
+.message .dev { display: block; margin-top: 4px; color: var(--ink); }
 .message ul { margin: 6px 0 0; padding-left: 20px; }
 
 /* ---- Live password checklist ---- */
@@ -186,10 +185,21 @@ button.link {
     border-radius: 999px;
     margin-left: 6px;
 }
-.badge.ok { background: #e3efe4; color: var(--ok); }
-.badge.warn { background: #f7ecd2; color: #7a5c1c; }
+.badge.ok { background: var(--soft-green); color: var(--ok); }
+.badge.warn { background: var(--soft-gold); color: var(--soft-gold-ink); }
 
 label.choice { display: flex; gap: 8px; align-items: baseline; font-size: 0.95rem; }
 label.choice:has(input:disabled) { color: var(--muted); }
+
+/* Radio buttons in a row (text size, theme) */
+fieldset.choices { border: none; padding: 0; margin: 0 0 12px; }
+fieldset.choices legend { font-family: system-ui, sans-serif; font-size: 0.9rem; margin-bottom: 4px; }
+fieldset.choices .row { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+fieldset.choices label { display: flex; gap: 6px; align-items: center; margin: 0; }
+
+/* Profile photo with its buttons beside it */
+.photo-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+.photo-row .avatar { width: 84px; height: 84px; font-size: 2rem; }
+.photo-row .buttons { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 
 ul.plain { list-style: none; padding: 0; margin: 0; font-family: system-ui, sans-serif; }

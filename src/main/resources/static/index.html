@@ -21,25 +21,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Orthodox Daily</title>
 
+    <!-- Colours (light and dark) and text sizes live in theme.css, shared by
+         every page. appearance.js applies your saved choice before the page draws. -->
+    <link rel="stylesheet" href="/css/theme.css">
+    <script src="/js/appearance.js"></script>
+
     <style>
-        /* ---- Colours, defined once as variables so they're easy to change ---- */
-        :root {
-            --bg: #f6f1e7;          /* warm parchment */
-            --card: #fffdf8;
-            --ink: #2b2118;         /* dark brown text */
-            --muted: #7a6a58;
-            --gold: #b08a3e;        /* accents, like icon gilding */
-            --line: #e4d9c4;
-
-            /* One colour per fasting rule (matches FastingRule.java) */
-            --strict: #8b1e1e;      /* deep red */
-            --wine: #9c3d54;        /* wine */
-            --oil: #a8741a;         /* olive-oil amber */
-            --fish: #2d6a8a;        /* sea blue */
-            --meat: #7a5a2e;        /* brown */
-            --free: #2f6b3a;        /* green */
-        }
-
         * { box-sizing: border-box; }
 
         body {
@@ -63,7 +50,8 @@
             font-family: system-ui, sans-serif;
             font-size: 0.85rem;
         }
-        .account-link a { color: var(--gold); }
+        .account-link a { color: var(--gold); text-decoration: none; }
+        .account-link .avatar { margin-right: 6px; }
 
         /* ---- Date navigation bar ---- */
         .date-nav {
@@ -111,8 +99,8 @@
             font-size: 0.8rem;
             padding: 3px 10px;
             border-radius: 999px;
-            background: #f4e8cc;
-            color: #7a5c1c;
+            background: var(--soft-gold);
+            color: var(--soft-gold-ink);
         }
 
         .card {
@@ -157,8 +145,32 @@
             padding: 3px 10px;
             border-radius: 999px;
         }
-        .pill.avoid { background: #f3e3e3; color: var(--strict); text-decoration: line-through; }
-        .pill.allowed { background: #e3efe4; color: var(--free); }
+        .pill.avoid { background: var(--soft-red); color: var(--strict); text-decoration: line-through; }
+        .pill.allowed { background: var(--soft-green); color: var(--free); }
+
+        /* ---- Service texts card ---- */
+        .button-link {
+            display: inline-block;
+            margin-top: 4px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: var(--primary-bg);
+            color: var(--primary-ink);
+            text-decoration: none;
+            font-family: system-ui, sans-serif;
+            font-size: 0.9rem;
+        }
+        .note { color: var(--muted); font-size: 0.85rem; margin: 8px 0 0; font-family: system-ui, sans-serif; }
+
+        /* ---- "Happy name day!" ---- */
+        .name-day {
+            background: var(--soft-gold);
+            color: var(--soft-gold-ink);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin: 0 0 16px;
+            text-align: center;
+        }
 
         /* ---- Expandable sections (readings, lives) ----
            <details> is a built-in HTML element that opens and closes on click,
@@ -191,8 +203,11 @@
 </head>
 <body>
 <main>
-    <!-- Becomes your name (linking to your account) once you're signed in. -->
+    <!-- Becomes your photo and name (linking to your account) once you're signed in. -->
     <div class="account-link" id="account-link"><a href="/login.html">Sign in</a></div>
+
+    <!-- Filled in on your name day (see the end of the script). -->
+    <div id="name-day"></div>
 
     <!-- Date navigation: previous day, pick a date, next day.
          (To jump back to today, use the date picker's own "Today" option.) -->
@@ -337,6 +352,22 @@
         return `<section class="card"><h2>Commemorated Today</h2><ul>${listItems(saints)}</ul></section>`;
     }
 
+    // The Archdiocese publishes the texts of each Sunday's and feast's services
+    // (PDF) in its Online Liturgical Guide. Its page can't be opened at a
+    // particular date from a link, so we say which date to pick there.
+    // (Showing the PDFs inside this app is waiting on the Archdiocese's permission.)
+    function serviceTextsCard(dateLabel) {
+        return `
+            <section class="card">
+                <h2>Service Texts</h2>
+                <p>The texts of Orthros, the Divine Liturgy and Vespers (PDF) for Sundays and feasts
+                   are published by the Archdiocese in its Online Liturgical Guide.</p>
+                <a class="button-link" href="https://www.antiochian.org/liturgicday"
+                   target="_blank" rel="noopener">Open the Online Liturgical Guide ↗</a>
+                <p class="note">Choose ${escapeHtml(dateLabel)} there.</p>
+            </section>`;
+    }
+
     function livesCard(lives) {
         if (lives.length === 0) return '';
         const items = lives.map(life => `
@@ -380,9 +411,10 @@
             // Ignore the reply if the user already clicked to a different date.
             if (iso !== currentDate) return;
 
-            document.getElementById('date').textContent = fromIso(day.date).toLocaleDateString('en-US', {
+            const dateLabel = fromIso(day.date).toLocaleDateString('en-US', {
                 weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
             });
+            document.getElementById('date').textContent = dateLabel;
             document.getElementById('title').textContent = day.title;
 
             // Subtitle line, e.g. "Thursday of the 5th Week · Tone 3", plus a feast badge.
@@ -396,6 +428,7 @@
             content.innerHTML =
                 fastingCard(day.fasting) +
                 readingsCard(day.readings) +
+                serviceTextsCard(dateLabel) +
                 saintsCard(day.saints) +
                 livesCard(day.lives);
         } catch (error) {
@@ -418,14 +451,26 @@
     const requested = new URLSearchParams(location.search).get('date');
     showDate(/^\d{4}-\d{2}-\d{2}$/.test(requested ?? '') ? requested : toIso(new Date()));
 
-    // ---- Signed in? Show your name instead of "Sign in" ----
+    // ---- Signed in? Show your photo and name instead of "Sign in" ----
     // /api/account answers 401 when nobody is signed in; then we keep "Sign in".
     fetch('/api/account')
         .then(response => response.ok ? response.json() : null)
         .then(account => {
-            if (account) {
-                document.getElementById('account-link').innerHTML =
-                    `<a href="/account.html">${escapeHtml(account.displayName)}</a>`;
+            if (!account) return;
+            rememberAppearance(account); // your text size and theme (js/appearance.js)
+
+            const avatar = account.photoVersion
+                ? `<img class="avatar" src="/api/account/photo?v=${account.photoVersion}" alt="">`
+                : `<span class="avatar">${escapeHtml(account.displayName.charAt(0).toUpperCase())}</span>`;
+            document.getElementById('account-link').innerHTML =
+                `<a href="/account.html">${avatar}${escapeHtml(account.displayName)}</a>`;
+
+            // Is today your name day? (nameDay is "MM-DD"; toIso gives "YYYY-MM-DD".)
+            if (account.nameDay && toIso(new Date()).slice(5) === account.nameDay) {
+                const firstName = account.displayName.split(' ')[0];
+                const prayer = account.patronSaint ? ` May ${account.patronSaint} pray for you.` : '';
+                document.getElementById('name-day').innerHTML =
+                    `<p class="name-day">✦ Happy name day, ${escapeHtml(firstName)}!${escapeHtml(prayer)} Many years! ✦</p>`;
             }
         })
         .catch(() => {}); // backend offline: the calendar shows its own message

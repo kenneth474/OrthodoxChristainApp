@@ -2,7 +2,8 @@
 <!--
   ACCOUNT PAGE  (http://localhost:8080/account.html)
   ------------
-  Your name, email and phone, verifying them, and two-step verification.
+  Your profile (photo, name, patron saint, name day, home parish), how the app
+  looks, your email and phone, and two-step verification.
   Talks to AccountController (/api/account/...). If you're not signed in,
   the first request gets a 401 and we send you to the sign-in page.
 -->
@@ -11,7 +12,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Your account · Orthodox Daily</title>
+    <link rel="stylesheet" href="/css/theme.css">
     <link rel="stylesheet" href="/css/forms.css">
+    <script src="/js/appearance.js"></script>
 </head>
 <body>
 <main class="narrow">
@@ -21,10 +24,53 @@
     <p id="message" class="message" hidden></p>
 
     <section class="card">
-        <h2>Name</h2>
-        <form id="name-form" class="inline">
-            <input name="displayName" maxlength="60" required aria-label="Your name">
-            <button type="submit">Save</button>
+        <h2>Profile</h2>
+        <div class="photo-row">
+            <span id="avatar"></span>
+            <div class="buttons">
+                <button type="button" id="choose-photo">Change photo</button>
+                <button type="button" class="link" id="remove-photo" hidden>Remove photo</button>
+                <!-- The real file picker is hidden; the button above opens it. -->
+                <input type="file" id="photo-file" accept="image/jpeg,image/png" hidden>
+            </div>
+        </div>
+        <form id="profile-form">
+            <label>Name
+                <input name="displayName" maxlength="60" required autocomplete="name">
+            </label>
+            <label>Patron saint <span class="optional">(optional)</span>
+                <input name="patronSaint" maxlength="100" placeholder="e.g. St. Nicholas the Wonderworker">
+            </label>
+            <label>Name day <span class="optional">(optional: your patron saint's feast)</span>
+                <input type="date" name="nameDay">
+            </label>
+            <label>Home parish <span class="optional">(optional)</span>
+                <input name="homeParish" maxlength="120" placeholder="e.g. Saints Constantine and Helen, Carrollton">
+            </label>
+            <button type="submit">Save profile</button>
+        </form>
+    </section>
+
+    <section class="card">
+        <h2>Appearance</h2>
+        <!-- Saved as soon as you pick an option. -->
+        <form id="appearance-form">
+            <fieldset class="choices">
+                <legend>Text size</legend>
+                <div class="row">
+                    <label><input type="radio" name="textSize" value="NORMAL"> Normal</label>
+                    <label><input type="radio" name="textSize" value="LARGE"> Large</label>
+                    <label><input type="radio" name="textSize" value="LARGER"> Larger</label>
+                </div>
+            </fieldset>
+            <fieldset class="choices">
+                <legend>Theme</legend>
+                <div class="row">
+                    <label><input type="radio" name="theme" value="SYSTEM"> Match my device</label>
+                    <label><input type="radio" name="theme" value="LIGHT"> Light</label>
+                    <label><input type="radio" name="theme" value="DARK"> Dark</label>
+                </div>
+            </fieldset>
         </form>
     </section>
 
@@ -83,9 +129,33 @@
 <script>
     const $ = id => document.getElementById(id);
 
+    // Your photo, or your first initial in a circle if you haven't added one.
+    function avatarHtml(account) {
+        if (account.photoVersion) {
+            return `<img class="avatar" src="/api/account/photo?v=${account.photoVersion}" alt="Your profile photo">`;
+        }
+        return `<span class="avatar" aria-hidden="true">${escapeHtml(account.displayName.charAt(0).toUpperCase())}</span>`;
+    }
+
     // Fills the page in from an AccountView (see AccountView.java).
     function render(account) {
-        $('name-form').displayName.value = account.displayName;
+        rememberAppearance(account); // apply text size and theme (js/appearance.js)
+
+        $('avatar').innerHTML = avatarHtml(account);
+        $('remove-photo').hidden = !account.photoVersion;
+
+        const profile = $('profile-form');
+        profile.displayName.value = account.displayName;
+        profile.patronSaint.value = account.patronSaint ?? '';
+        // The date picker needs a full date; any year works, since only month and
+        // day are kept. We use this year, or leap year 2028 for a February 29 name day.
+        const year = account.nameDay === '02-29' ? 2028 : new Date().getFullYear();
+        profile.nameDay.value = account.nameDay ? `${year}-${account.nameDay}` : '';
+        profile.homeParish.value = account.homeParish ?? '';
+
+        const appearance = $('appearance-form');
+        appearance.textSize.value = account.textSize;
+        appearance.theme.value = account.theme;
 
         $('email').textContent = account.email;
         setBadge($('email-badge'), account.emailVerified);
@@ -99,12 +169,12 @@
         if (!account.phoneNumber || account.phoneVerified) $('phone-code-form').hidden = true;
 
         // Two-step verification only applies to password sign-in.
-        const form = $('two-factor-form');
-        form.hidden = !account.hasPassword;
+        const twoFactor = $('two-factor-form');
+        twoFactor.hidden = !account.hasPassword;
         $('two-factor-social').hidden = account.hasPassword;
-        form.method.value = account.twoFactorMethod;
-        form.querySelector('[value=EMAIL]').disabled = !account.emailVerified;
-        form.querySelector('[value=SMS]').disabled = !account.phoneVerified;
+        twoFactor.method.value = account.twoFactorMethod;
+        twoFactor.querySelector('[value=EMAIL]').disabled = !account.emailVerified;
+        twoFactor.querySelector('[value=SMS]').disabled = !account.phoneVerified;
         $('email-needed').textContent = account.emailVerified ? '' : '(verify your email first)';
         $('sms-needed').textContent = account.phoneVerified ? '' : '(add and verify a phone first)';
 
@@ -146,17 +216,69 @@
         });
     }
 
-    // ---- Name ----
-    onSubmit('name-form', form => run(async () => {
-        render(await api('PUT', '/api/account/name', { displayName: form.displayName.value }));
-    }, 'Name saved.'));
+    // ---- Photo ----
+    // Before uploading, the browser crops the photo to a square and shrinks
+    // it, using a <canvas> (a picture you can draw on in JavaScript). This
+    // also turns phone photos the right way up and makes the upload tiny.
+    // The server still checks and re-saves it (ProfilePhotoService.java).
+    async function squarePhoto(file) {
+        const image = await createImageBitmap(file); // fails if it isn't a picture
+        const side = Math.min(image.width, image.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 512;
+        canvas.getContext('2d').drawImage(image,
+            (image.width - side) / 2, (image.height - side) / 2, side, side, // the middle square...
+            0, 0, 512, 512);                                                 // ...drawn at 512 x 512
+        return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+    }
+
+    $('choose-photo').addEventListener('click', () => $('photo-file').click());
+
+    $('photo-file').addEventListener('change', event => run(async () => {
+        const file = event.target.files[0];
+        event.target.value = ''; // so choosing the same file again still counts as a change
+        if (!file) return;
+
+        let square;
+        try {
+            square = await squarePhoto(file);
+        } catch {
+            throw new Error('Please choose a JPEG or PNG photo.');
+        }
+        const form = new FormData();
+        form.append('photo', square, 'photo.jpg');
+        render(await api('POST', '/api/account/photo', form));
+    }, 'Photo saved.'));
+
+    $('remove-photo').addEventListener('click', () => run(async () => {
+        render(await api('DELETE', '/api/account/photo'));
+    }, 'Photo removed.'));
+
+    // ---- Profile ----
+    onSubmit('profile-form', form => run(async () => {
+        render(await api('PUT', '/api/account/profile', {
+            displayName: form.displayName.value,
+            patronSaint: form.patronSaint.value,
+            nameDay: form.nameDay.value,
+            homeParish: form.homeParish.value,
+        }));
+    }, 'Profile saved.'));
+
+    // ---- Appearance: saved on every change ----
+    $('appearance-form').addEventListener('change', () => run(async () => {
+        const form = $('appearance-form');
+        render(await api('PUT', '/api/account/appearance', {
+            textSize: form.textSize.value,
+            theme: form.theme.value,
+        }));
+    }));
 
     // ---- Email ----
     $('email-send-code').addEventListener('click', () => run(async () => {
         const result = await api('POST', '/api/account/email/send-code');
         $('email-code-form').hidden = false;
         $('email-code-form').code.focus();
-        showMessage(`We emailed a code to ${result.sentTo}.`, [], 'info');
+        showCodeSent(result, 'emailed');
     }));
 
     onSubmit('email-code-form', form => run(async () => {
@@ -171,7 +293,7 @@
         if (result.sentTo) {
             $('phone-code-form').hidden = false;
             $('phone-code-form').code.focus();
-            showMessage(`We texted a code to ${result.sentTo}.`, [], 'info');
+            showCodeSent(result, 'texted');
         } else {
             showMessage('Phone number saved.', [], 'info');
         }
@@ -181,7 +303,7 @@
         const result = await api('POST', '/api/account/phone/send-code');
         $('phone-code-form').hidden = false;
         $('phone-code-form').code.focus();
-        showMessage(`We texted a code to ${result.sentTo}.`, [], 'info');
+        showCodeSent(result, 'texted');
     }));
 
     onSubmit('phone-code-form', form => run(async () => {
@@ -197,6 +319,7 @@
     // ---- Sign out ----
     $('sign-out').addEventListener('click', () => run(async () => {
         await api('POST', '/api/auth/sign-out');
+        forgetAppearance();
         location.href = '/';
     }));
 

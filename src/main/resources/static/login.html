@@ -13,7 +13,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Sign in · Orthodox Daily</title>
+    <link rel="stylesheet" href="/css/theme.css">
     <link rel="stylesheet" href="/css/forms.css">
+    <script src="/js/appearance.js"></script>
 </head>
 <body>
 <main class="narrow">
@@ -27,10 +29,14 @@
 
     <p id="message" class="message" hidden></p>
 
-    <!-- Only the providers set up in secrets.properties are shown. -->
-    <div id="social" hidden>
-        <a id="google" class="social-button" href="/oauth2/authorization/google" hidden>Continue with Google</a>
-        <a id="apple" class="social-button apple" href="/oauth2/authorization/apple" hidden>Continue with Apple</a>
+    <!-- Works for both signing in and creating an account: the first Google or
+         Apple sign-in creates your account. A provider whose keys aren't in
+         secrets.properties yet is shown greyed out. -->
+    <div id="social">
+        <a id="google" class="social-button" href="/oauth2/authorization/google">
+            Continue with Google <span class="soon" hidden>(not set up yet)</span></a>
+        <a id="apple" class="social-button apple" href="/oauth2/authorization/apple">
+            Continue with Apple <span class="soon" hidden>(not set up yet)</span></a>
         <p class="divider">or use your email</p>
     </div>
 
@@ -78,6 +84,8 @@
     <!-- 3. Enter the two-step verification code -->
     <form id="code-form" class="card" hidden>
         <p>We sent a 6-digit code to <strong id="sent-to"></strong>. It expires in 10 minutes.</p>
+        <p class="hint" id="dev-hint" hidden>Development mode: codes aren't really sent yet.
+            Find this one in the VS Code terminal where the app is running.</p>
         <label>Code
             <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
         </label>
@@ -90,7 +98,6 @@
 <script src="/js/api.js"></script>
 <script>
     const $ = id => document.getElementById(id);
-    let socialAvailable = false;
 
     // Show one panel and hide the others.
     function showPanel(id) {
@@ -100,7 +107,7 @@
         $('tab-sign-in').classList.toggle('active', id === 'sign-in-form');
         $('tab-register').classList.toggle('active', id === 'register-form');
         $('tabs').hidden = id === 'code-form';
-        $('social').hidden = id === 'code-form' || !socialAvailable;
+        $('social').hidden = id === 'code-form';
         hideMessage();
     }
 
@@ -117,9 +124,10 @@
         }
     }
 
-    function askForCode(sentTo) {
+    function askForCode(result) {
         showPanel('code-form');
-        $('sent-to').textContent = sentTo;
+        $('sent-to').textContent = result.sentTo;
+        $('dev-hint').hidden = !result.developmentMode;
         $('code-form').code.value = '';
         $('code-form').code.focus();
     }
@@ -139,7 +147,7 @@
                 password: form.password.value,
             });
             if (result.status === 'CODE_REQUIRED') {
-                askForCode(result.sentTo);
+                askForCode(result);
             } else {
                 location.href = '/';
             }
@@ -192,20 +200,27 @@
 
     $('resend').addEventListener('click', async () => {
         try {
-            const result = await api('POST', '/api/auth/sign-in/resend');
-            showMessage(`We sent a new code to ${result.sentTo}.`, [], 'info');
+            showCodeSent(await api('POST', '/api/auth/sign-in/resend'), 'sent a new');
         } catch (error) {
             showMessage(error.message);
         }
     });
 
     // ---- Start ----
-    // Show the Google / Apple buttons that are set up.
+    // Grey out Google / Apple if their keys aren't in secrets.properties yet.
+    function notSetUp(id, name) {
+        const button = $(id);
+        button.classList.add('disabled');
+        button.removeAttribute('href');           // clicking no longer leaves the page
+        button.setAttribute('aria-disabled', 'true');
+        button.querySelector('.soon').hidden = false;
+        button.addEventListener('click', () => showMessage(
+            `${name} sign-in isn't switched on yet: the app needs ${name} keys in secrets.properties. `
+            + 'See "Setting up sign-in" in the README.', [], 'info'));
+    }
     api('GET', '/api/auth/options').then(options => {
-        $('google').hidden = !options.google;
-        $('apple').hidden = !options.apple;
-        socialAvailable = options.google || options.apple;
-        $('social').hidden = !socialAvailable || !$('code-form').hidden;
+        if (!options.google) notSetUp('google', 'Google');
+        if (!options.apple) notSetUp('apple', 'Apple');
     }).catch(() => {});
 
     if (location.hash === '#register') {

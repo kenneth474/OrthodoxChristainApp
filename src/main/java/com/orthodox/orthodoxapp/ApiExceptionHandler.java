@@ -7,6 +7,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * ApiExceptionHandler: turns errors into clear JSON replies.
@@ -58,5 +59,15 @@ public class ApiExceptionHandler {
             problem.setProperty("problems", ex.problems());
         }
         return problem;
+    }
+
+    /**
+     * An upload bigger than spring.servlet.multipart.max-file-size
+     * (application.properties). 413 = "Content Too Large".
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ProblemDetail uploadTooLarge(MaxUploadSizeExceededException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONTENT_TOO_LARGE,
+                "That file is too big. Please choose a photo under 10 MB.");
     }
 }

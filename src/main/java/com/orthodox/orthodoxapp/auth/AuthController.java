@@ -50,16 +50,17 @@ public class AuthController {
     /**
      * The result of a sign-in step:
      *   status "SIGNED_IN"     -> done; account holds the person's details
-     *   status "CODE_REQUIRED" -> enter the code sent to sentTo (e.g. "k•••@gmail.com")
+     *   status "CODE_REQUIRED" -> enter the code sent to sentTo (e.g. "k•••@gmail.com");
+     *                             developmentMode = it's in the terminal, not really sent
      */
-    public record SignInResponse(String status, String sentTo, AccountView account) {
+    public record SignInResponse(String status, String sentTo, boolean developmentMode, AccountView account) {
 
         static SignInResponse signedIn(AppUser user) {
-            return new SignInResponse("SIGNED_IN", null, AccountView.from(user));
+            return new SignInResponse("SIGNED_IN", null, false, AccountView.from(user));
         }
 
-        static SignInResponse codeRequired(String sentTo) {
-            return new SignInResponse("CODE_REQUIRED", sentTo, null);
+        static SignInResponse codeRequired(SentCode code) {
+            return new SignInResponse("CODE_REQUIRED", code.sentTo(), code.developmentMode(), null);
         }
     }
 

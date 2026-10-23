@@ -25,4 +25,9 @@ public class ConsoleEmailSender implements EmailSender {
                 {}
                 ==================================================================""", to, subject, body);
     }
+
+    @Override
+    public boolean developmentMode() {
+        return true;
+    }
 }

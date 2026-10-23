@@ -70,6 +70,29 @@ public class AppUser {
     private int failedSignIns;
     private Instant lockedUntil;
 
+    // ----- Profile and preferences (added in Session 2) -----
+    // These columns were added to a table that may already have rows, so
+    // they're allowed to be empty (null). The getters below give a sensible
+    // default for older accounts that don't have a value yet.
+
+    private String patronSaint;
+
+    // The feast day of your patron saint, as "MM-DD" (e.g. "12-06" for St Nicholas).
+    private String nameDay;
+
+    // Free text for now; becomes a link to a Parish once the parish finder exists.
+    private String homeParish;
+
+    // When the profile photo last changed (null = no photo). The photo itself
+    // lives in its own table (ProfilePhoto), so loading an account stays fast.
+    private Instant photoUpdatedAt;
+
+    @Enumerated(EnumType.STRING)
+    private TextSize textSize;
+
+    @Enumerated(EnumType.STRING)
+    private Theme theme;
+
     @Column(nullable = false)
     private Instant createdAt;
 
@@ -143,4 +166,22 @@ public class AppUser {
     public void setAppleId(String appleId) { this.appleId = appleId; }
 
     public Instant getCreatedAt() { return createdAt; }
+
+    public String getPatronSaint() { return patronSaint; }
+    public void setPatronSaint(String patronSaint) { this.patronSaint = patronSaint; }
+
+    public String getNameDay() { return nameDay; }
+    public void setNameDay(String nameDay) { this.nameDay = nameDay; }
+
+    public String getHomeParish() { return homeParish; }
+    public void setHomeParish(String homeParish) { this.homeParish = homeParish; }
+
+    public Instant getPhotoUpdatedAt() { return photoUpdatedAt; }
+    public void setPhotoUpdatedAt(Instant photoUpdatedAt) { this.photoUpdatedAt = photoUpdatedAt; }
+
+    public TextSize getTextSize() { return textSize == null ? TextSize.NORMAL : textSize; }
+    public void setTextSize(TextSize textSize) { this.textSize = textSize; }
+
+    public Theme getTheme() { return theme == null ? Theme.SYSTEM : theme; }
+    public void setTheme(Theme theme) { this.theme = theme; }
 }

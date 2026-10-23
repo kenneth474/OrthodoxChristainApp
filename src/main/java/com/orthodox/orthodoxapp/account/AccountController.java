@@ -1,35 +1,51 @@
 package com.orthodox.orthodoxapp.account;
 
+import com.orthodox.orthodoxapp.auth.AuthException;
+import com.orthodox.orthodoxapp.auth.SentCode;
 import com.orthodox.orthodoxapp.auth.SignedInUser;
+import java.io.IOException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * AccountController: endpoints for the signed-in person's own account.
  * SecurityConfig makes every address here require a signed-in user.
  *
- *   GET  /api/account                  -> your details (AccountView)
- *   PUT  /api/account/name             -> change your name
- *   PUT  /api/account/phone            -> add, change or remove your phone (texts a code)
- *   POST /api/account/email/send-code  -> email a code to verify your email
- *   POST /api/account/email/verify     -> check that code
- *   POST /api/account/phone/send-code  -> text a code to verify your phone
- *   POST /api/account/phone/verify     -> check that code
- *   PUT  /api/account/two-factor       -> NONE, EMAIL or SMS
+ *   GET    /api/account                  -> your details (AccountView)
+ *   PUT    /api/account/profile          -> name, patron saint, name day, home parish
+ *   PUT    /api/account/appearance       -> text size and theme
+ *   GET    /api/account/photo            -> your photo (a JPEG)
+ *   POST   /api/account/photo            -> upload a new photo
+ *   DELETE /api/account/photo            -> remove it
+ *   PUT    /api/account/phone            -> add, change or remove your phone (texts a code)
+ *   POST   /api/account/email/send-code  -> email a code to verify your email
+ *   POST   /api/account/email/verify     -> check that code
+ *   POST   /api/account/phone/send-code  -> text a code to verify your phone
+ *   POST   /api/account/phone/verify     -> check that code
+ *   PUT    /api/account/two-factor       -> NONE, EMAIL or SMS
  *
  * @AuthenticationPrincipal gives us the SignedInUser from the session, so a
- * person can only ever change their OWN account.
+ * person can only ever see and change their OWN account.
  */
 @RestController
 @RequestMapping("/api/account")
 public class AccountController {
 
-    public record NameRequest(String displayName) {
+    public record ProfileRequest(String displayName, String patronSaint, String nameDay, String homeParish) {
+    }
+
+    public record AppearanceRequest(TextSize textSize, Theme theme) {
     }
 
     public record PhoneRequest(String phone) {
@@ -41,14 +57,12 @@ public class AccountController {
     public record TwoFactorRequest(TwoFactorMethod method) {
     }
 
-    /** Where a code was sent, partly hidden; null when no code was sent. */
-    public record CodeSent(String sentTo) {
-    }
-
     private final AccountService accountService;
+    private final ProfilePhotoService photoService;
 
-    public AccountController(AccountService accountService) {
+    public AccountController(AccountService accountService, ProfilePhotoService photoService) {
         this.accountService = accountService;
+        this.photoService = photoService;
     }
 
     @GetMapping
@@ -56,19 +70,58 @@ public class AccountController {
         return AccountView.from(accountService.get(me.id()));
     }
 
-    @PutMapping("/name")
-    public AccountView updateName(@AuthenticationPrincipal SignedInUser me, @RequestBody NameRequest body) {
-        return AccountView.from(accountService.updateName(me.id(), body.displayName()));
+    @PutMapping("/profile")
+    public AccountView updateProfile(@AuthenticationPrincipal SignedInUser me, @RequestBody ProfileRequest body) {
+        return AccountView.from(accountService.updateProfile(
+                me.id(), body.displayName(), body.patronSaint(), body.nameDay(), body.homeParish()));
     }
 
+    @PutMapping("/appearance")
+    public AccountView updateAppearance(@AuthenticationPrincipal SignedInUser me, @RequestBody AppearanceRequest body) {
+        return AccountView.from(accountService.updateAppearance(me.id(), body.textSize(), body.theme()));
+    }
+
+    // ----- Photo -----
+
+    /**
+     * Sends the photo's bytes back as an image. ResponseEntity lets us set the
+     * status and the Content-Type header ourselves; 404 = no photo yet.
+     */
+    @GetMapping("/photo")
+    public ResponseEntity<byte[]> photo(@AuthenticationPrincipal SignedInUser me) {
+        return photoService.find(me.id())
+                .map(jpeg -> ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(jpeg))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Uploads arrive as "multipart/form-data", the format browsers use for
+     * files. @RequestParam("photo") picks out the file field named "photo".
+     */
+    @PostMapping("/photo")
+    public AccountView uploadPhoto(@AuthenticationPrincipal SignedInUser me,
+                                   @RequestParam("photo") MultipartFile photo) throws IOException {
+        if (photo.isEmpty()) {
+            throw new AuthException(HttpStatus.BAD_REQUEST, "Please choose a photo.");
+        }
+        return AccountView.from(photoService.save(me.id(), photo.getBytes()));
+    }
+
+    @DeleteMapping("/photo")
+    public AccountView deletePhoto(@AuthenticationPrincipal SignedInUser me) {
+        return AccountView.from(photoService.delete(me.id()));
+    }
+
+    // ----- Phone, verification and two-step verification -----
+
     @PutMapping("/phone")
-    public CodeSent updatePhone(@AuthenticationPrincipal SignedInUser me, @RequestBody PhoneRequest body) {
-        return new CodeSent(accountService.updatePhone(me.id(), body.phone()));
+    public SentCode updatePhone(@AuthenticationPrincipal SignedInUser me, @RequestBody PhoneRequest body) {
+        return accountService.updatePhone(me.id(), body.phone());
     }
 
     @PostMapping("/email/send-code")
-    public CodeSent sendEmailCode(@AuthenticationPrincipal SignedInUser me) {
-        return new CodeSent(accountService.sendEmailCode(me.id()));
+    public SentCode sendEmailCode(@AuthenticationPrincipal SignedInUser me) {
+        return accountService.sendEmailCode(me.id());
     }
 
     @PostMapping("/email/verify")
@@ -77,8 +130,8 @@ public class AccountController {
     }
 
     @PostMapping("/phone/send-code")
-    public CodeSent sendPhoneCode(@AuthenticationPrincipal SignedInUser me) {
-        return new CodeSent(accountService.sendPhoneCode(me.id()));
+    public SentCode sendPhoneCode(@AuthenticationPrincipal SignedInUser me) {
+        return accountService.sendPhoneCode(me.id());
     }
 
     @PostMapping("/phone/verify")

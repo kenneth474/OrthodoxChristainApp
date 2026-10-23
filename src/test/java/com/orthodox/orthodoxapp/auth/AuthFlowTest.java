@@ -145,7 +145,8 @@ class AuthFlowTest {
         MockHttpSession newBrowser = new MockHttpSession();
         send(post("/api/auth/sign-in"), newBrowser, signIn(email))
                 .andExpect(jsonPath("$.status").value("CODE_REQUIRED"))
-                .andExpect(jsonPath("$.sentTo").value("t•••@example.com"));
+                .andExpect(jsonPath("$.sentTo").value("t•••@example.com"))
+                .andExpect(jsonPath("$.developmentMode").value(false)); // the test's fake sender is "real"
         mvc.perform(get("/api/account").session(newBrowser)).andExpect(status().isUnauthorized());
 
         String rightCode = lastCodeEmailedTo(email);

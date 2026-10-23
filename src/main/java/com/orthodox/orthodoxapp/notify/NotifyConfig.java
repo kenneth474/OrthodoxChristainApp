@@ -30,10 +30,18 @@ public class NotifyConfig {
      */
     @Bean
     EmailSender emailSender(ObjectProvider<JavaMailSender> mailSender,
-                            @Value("${app.mail.from:${spring.mail.username:}}") String from) {
+                            @Value("${app.mail.from:${spring.mail.username:}}") String from,
+                            @Value("${spring.mail.password:}") String mailPassword) {
         JavaMailSender realMail = mailSender.getIfAvailable();
         if (realMail == null) {
             log.info("Email: development mode. Codes will be printed in this terminal.");
+            return new ConsoleEmailSender();
+        }
+        // The server is set but its password isn't pasted in yet: keep printing
+        // codes rather than failing to send every email.
+        if (mailPassword.isBlank()) {
+            log.warn("Email: spring.mail.password is empty in secrets.properties, so emails are "
+                    + "printed in this terminal (development mode) until it's filled in.");
             return new ConsoleEmailSender();
         }
         log.info("Email: sending real emails from {}", from);

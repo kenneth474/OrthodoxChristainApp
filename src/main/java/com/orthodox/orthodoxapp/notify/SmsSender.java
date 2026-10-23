@@ -11,4 +11,9 @@ public interface SmsSender {
      * @param body    the message text
      */
     void send(String toPhone, String body);
+
+    /** True when texts are only printed in the terminal (see EmailSender). */
+    default boolean developmentMode() {
+        return false;
+    }
 }

@@ -14,4 +14,13 @@ package com.orthodox.orthodoxapp.notify;
 public interface EmailSender {
 
     void send(String to, String subject, String body);
+
+    /**
+     * True when emails are only printed in the terminal, so pages can say
+     * where to find the code. A "default" method gives every implementation
+     * this answer unless it overrides it (ConsoleEmailSender does).
+     */
+    default boolean developmentMode() {
+        return false;
+    }
 }

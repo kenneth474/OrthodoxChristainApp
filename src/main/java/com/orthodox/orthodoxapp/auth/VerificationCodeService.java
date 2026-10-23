@@ -54,10 +54,11 @@ public class VerificationCodeService {
      * database. If sending fails and throws an exception, the new code is not
      * saved either (the change is "rolled back").
      *
-     * @return where the code went, partly hidden, e.g. "k•••@gmail.com"
+     * @return where the code went (partly hidden, e.g. "k•••@gmail.com"), and
+     *         whether it was only printed in the terminal
      */
     @Transactional
-    public String send(AppUser user, CodePurpose purpose) {
+    public SentCode send(AppUser user, CodePurpose purpose) {
         Instant now = Instant.now();
 
         // Asked less than 30 seconds ago? Then wait.
@@ -112,7 +113,7 @@ public class VerificationCodeService {
 
     // Sends the code by text for phone checks and SMS two-step sign-in,
     // otherwise by email.
-    private String deliver(AppUser user, CodePurpose purpose, String code) {
+    private SentCode deliver(AppUser user, CodePurpose purpose, String code) {
         String message = "Your Orthodox Daily code is " + code + ". It expires in 10 minutes. "
                 + "If you didn't ask for it, you can ignore this message.";
         boolean byText = purpose == CodePurpose.VERIFY_PHONE
@@ -120,10 +121,10 @@ public class VerificationCodeService {
         try {
             if (byText) {
                 smsSender.send(user.getPhoneNumber(), message);
-                return PhoneNumbers.mask(user.getPhoneNumber());
+                return new SentCode(PhoneNumbers.mask(user.getPhoneNumber()), smsSender.developmentMode());
             }
             emailSender.send(user.getEmail(), "Your Orthodox Daily code", message);
-            return maskEmail(user.getEmail());
+            return new SentCode(maskEmail(user.getEmail()), emailSender.developmentMode());
         } catch (RuntimeException ex) {
             // Log the technical details for us; give the person a friendly message.
             log.error("Could not send a {} code to user {}", purpose, user.getId(), ex);

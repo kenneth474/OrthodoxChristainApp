@@ -4,7 +4,7 @@
 
       const result = await api('POST', '/api/auth/sign-in', { email, password });
 
-  - Sends the body as JSON.
+  - Sends the body as JSON, or as-is if it's FormData (used to upload files).
   - For anything except GET, first asks /api/auth/csrf for this session's CSRF
     token and sends it in a header. Spring Security refuses POST/PUT requests
     without it (see SecurityConfig.java for why).
@@ -13,9 +13,12 @@
 */
 async function api(method, url, body) {
     const headers = {};
-    if (body !== undefined) {
+    const isUpload = body instanceof FormData;
+    if (body !== undefined && !isUpload) {
         headers['Content-Type'] = 'application/json';
     }
+    // (For FormData the browser sets the Content-Type itself, including the
+    // "boundary" text that separates the parts of the upload.)
     if (method !== 'GET') {
         const csrf = await (await fetch('/api/auth/csrf')).json();
         headers[csrf.headerName] = csrf.token;
@@ -24,7 +27,7 @@ async function api(method, url, body) {
     const response = await fetch(url, {
         method,
         headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
+        body: body === undefined ? undefined : (isUpload ? body : JSON.stringify(body)),
     });
 
     // Some replies (like signing out) have no body, so read text first.
@@ -65,4 +68,17 @@ function showMessage(text, problems = [], kind = 'error') {
 
 function hideMessage() {
     document.getElementById('message').hidden = true;
+}
+
+// "We emailed a code to k•••@gmail.com." When the server is in development
+// mode (no email/text settings yet), also says where the code really is.
+function showCodeSent(result, verb = 'sent') {
+    showMessage(`We ${verb} a code to ${result.sentTo}.`, [], 'info');
+    if (result.developmentMode) {
+        const note = document.createElement('span');
+        note.className = 'dev';
+        note.textContent = "Development mode: codes aren't really sent yet. "
+            + 'Find this one in the VS Code terminal where the app is running.';
+        document.getElementById('message').append(note);
+    }
 }
