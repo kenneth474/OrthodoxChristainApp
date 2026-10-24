@@ -18,20 +18,23 @@ data through its `/api/...` endpoints.
 
 ```
 frontend/
-├── index.html              The one HTML page (home-screen icon, theme set before drawing)
+├── index.html              The one HTML page (home-screen icon, style set before drawing)
 ├── vite.config.ts          Dev server, proxy to the backend, build output folder, tests
-├── public/                 Copied as-is: icons, manifest.webmanifest, data/prayers.json
+├── public/                 Copied as-is: icons, manifest.webmanifest, data/prayers.json, data/church.json
 └── src/
-    ├── main.tsx            Where React starts
-    ├── App.tsx             The addresses (routes) and the shared layout
+    ├── main.tsx            Where React starts (and the fonts are loaded)
+    ├── App.tsx             The addresses, and the shared layout
     ├── api.ts              Talking to the backend (JSON, CSRF token, errors)
     ├── types.ts            The shapes of the backend's data (mirrors the Java records)
     ├── account-context.ts  useAccount(): who's signed in, from any screen
     ├── AccountProvider.tsx Loads the signed-in account once for the whole app
-    ├── components/         TabBar, Player (reading aloud), and small shared pieces
-    ├── pages/              One file per screen: Home, Bible, Prayers, Profile, Sign-in
-    ├── lib/                Plain helpers: dates, reading aloud, HTML cleaning, prayers
-    └── styles/             theme.css (colours, dark mode, tab bar) and app.css
+    ├── tabs-context.ts     useTabs(): which tab is showing, where each tab was left
+    ├── components/         TabsHost (keeps every tab alive), TabBar, PullToRefresh,
+    │                       ornaments (cross, feast signs, page header), StylePicker, Player
+    ├── pages/              One file per screen: Home, Bible, Prayers, Church, Profile, Sign-in
+    ├── lib/                Plain helpers: data loading (data.ts), styles, Church seasons and
+    │                       Pascha, the daily intention, tabs, dates, reading aloud, prayers
+    └── styles/             theme.css (the five styles, light and dark) and app.css (the screens)
 ```
 
 Every file starts with a comment explaining what it's for.

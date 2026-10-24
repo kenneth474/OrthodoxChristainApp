@@ -39,15 +39,18 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 | **Sign in with Google / Apple** | One-tap sign-in that creates or links your account (buttons show "not set up yet" until keys are added) | 🔧 Built: needs [keys](#4-setting-up-sign-in-email-and-text-messages) |
 | **Profile** | Profile photo (cropped, resized, location data stripped), patron saint, name day (with a greeting on the day), home parish | ✅ Working |
 | **Text size & dark mode** | Normal / Large / Larger text; match device, light or dark theme; saved to your account | ✅ Working |
+| **Five Orthodox styles** | Illuminated manuscript, Byzantine mosaic, Candlelit vigil, Holy Mountain, and Liturgical seasons (its colors follow the vestments of the Church year); each light and dark; chosen when creating an account, changed in Profile | ✅ Working |
+| **Typikon feast signs** | Each day's rank shown with the service books' signs (red cross in a circle for great feasts, and so on); a red drop capital opens each reading | ✅ Working |
 | **Service texts (PDF)** | Each day links to the Archdiocese's Online Liturgical Guide (Orthros, Divine Liturgy, Vespers) | 🔗 Linked; in-app viewer waiting on permission |
 | **Home parish & bookmarks** | Choose a home parish, bookmark saints and feasts | 🔜 Planned |
 | **Church news** | Archdiocese and parish news articles, managed by admins | 🔜 Planned |
 | **Parish events** | Parish admins post events (e.g. *"Vespers moved to 6:30 PM"*) | 🔜 Planned |
-| **Tab bar** | Home · Bible · Prayers · Profile at the bottom of every page, like Instagram's; Home is the default | ✅ Working |
+| **Tab bar** | Home · Bible · Prayers · Church · Profile at the bottom of every page, like Instagram's; Home is the default. Each tab stays exactly where you left it (page, scroll, open readings); pull down to refresh; tap the current tab to go back to its first page | ✅ Working |
 | **Orthodox Bible** | The whole Bible: Septuagint Old Testament (with Tobit, Wisdom, Sirach, Maccabees... and Orthodox Psalm numbering) and King James New Testament; continue reading; listen | ✅ Working |
 | **Prayer book** | Beginning, morning and evening prayers, the Creed, meals, the Theotokos, the Jesus Prayer, Communion, the departed, Lent and Pascha; listen | ✅ Working |
-| **Dioceses, ministries & about** | Information pages about the Archdiocese's structure and ministries | 🔜 Planned |
-| **Calendar caching** | Stores each day's data in Redis so the app is fast and gentle on the calendar API | 🔜 Planned |
+| **Church tab** | The Archdiocese: hierarchs, the eight dioceses (with their bishops and states), 20 ministries, and about the Archdiocese, with links to antiochian.org | ✅ Working (parishes come with the parish finder) |
+| **Pray today for…** | A different diocese, hierarch or ministry to pray for each day, on Home and in the Church tab | ✅ Working |
+| **Calendar caching** | Each day's calendar is kept in the server's memory until midnight (Central), so it loads instantly and spares the free Orthocal service; an older copy is used if Orthocal is down | ✅ Working |
 | **Morning notifications** | A 6:00 AM summary of major feasts and parish events | 🔜 Planned |
 | **Install on any device** | Installable web app (PWA), plus Android and iOS store apps | 🔜 Planned |
 
@@ -70,7 +73,8 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 | **Google / Apple sign-in** | OAuth 2.0 / OpenID Connect (Spring Security OAuth2 Client) | Sign in without a new password |
 | **Email & text messages** | Spring Mail (SMTP) and Twilio | Verification codes; printed in the terminal while developing |
 | **Maps & location** *(planned)* | Browser Geolocation API + OpenStreetMap | "Near me" parish search and maps |
-| **Cache** *(planned)* | Redis + Spring Cache | Each day's calendar data, cached until midnight |
+| **Cache** | `CalendarCache`: in the server's memory | Each day's calendar data, kept until midnight Central time (one server doesn't need Redis) |
+| **Fonts** | EB Garamond, Cormorant Garamond and Cinzel (SIL Open Font License), packed into the app with Fontsource | Book-like reading text and carved-inscription capitals, with no requests to Google |
 | **Frontend** | React 19 + TypeScript, built with Vite; React Router for the tabs | One app for every screen; adds to a phone's home screen and opens full screen |
 | **Frontend tests** | Vitest (with jsdom) | Tests the helpers: dates, HTML cleaning, reading aloud, prayer book |
 | **Mobile apps** *(planned)* | Capacitor | Wraps the React app as native Android and iOS apps |
@@ -92,12 +96,11 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
  └──────────────────────────┘        └──────┬───────────────┬───────┘
                                             │               │
                                      ┌──────▼─────┐   ┌─────▼──────┐
-                                     │ H2 now,    │   │   Redis    │
-                                     │ PostgreSQL │   │ daily      │
-                                     │ when live: │   │ calendar   │
-                                     │ users, ... │   │ cache      │
+                                     │ H2 locally,│   │ Calendar-  │
+                                     │ PostgreSQL │   │ Cache: each│
+                                     │ online:    │   │ day, kept  │
+                                     │ users, ... │   │ in memory  │
                                      └────────────┘   └────────────┘
-                                                          (planned)
 ```
 
 **The backend is built in layers, each with one job:**
@@ -112,7 +115,8 @@ CalendarController  ──▶  CalendarService  ──▶  OrthocalClient  ─�
    (`index.html` plus its JavaScript, built from `frontend/`).
 2. The Home screen (`frontend/src/pages/HomePage.tsx`) calls our backend, e.g. `/api/day/2026/12/25`.
 3. `CalendarController` passes the date to `CalendarService`.
-4. `CalendarService` asks `OrthocalClient`, which fetches Orthocal's JSON.
+4. `CalendarService` looks in `CalendarCache` first; if the day isn't there
+   (or is from before midnight), it asks `OrthocalClient`, which fetches Orthocal's JSON.
    Jackson turns it into an `OrthocalDay` record (a mirror of Orthocal's format).
 5. `CalendarService` converts that into our own `LiturgicalDay` record and works
    out the `FastingRule`.
@@ -169,10 +173,12 @@ OrthodoxChristianApp/
 ├── .dockerignore                    # Files the Dockerfile must not copy in (secrets, local builds)
 ├── render.yaml                      # Render "Blueprint": the online web app and its PostgreSQL database
 ├── frontend/                        # The React app (all the screens); see frontend/README.md
-│   ├── src/pages/                   # Home, Bible, Prayers, Profile, Sign-in
-│   ├── src/components/              # Tab bar, reading-aloud player, shared pieces
-│   ├── src/lib/                     # Helpers: dates, reading aloud, HTML cleaning, prayers
+│   ├── src/pages/                   # Home, Bible, Prayers, Church, Profile, Sign-in
+│   ├── src/components/              # TabsHost (keeps every tab alive), tab bar, pull to refresh, ornaments, style picker, player
+│   ├── src/lib/                     # Helpers: dates, data loading, styles, Church seasons, daily intention, reading aloud
+│   ├── src/styles/                  # theme.css (the five styles' colors and fonts) and app.css (the screens)
 │   ├── public/data/prayers.json     # The prayers themselves (edit this to add or fix a prayer)
+│   ├── public/data/church.json      # The Archdiocese: hierarchs, dioceses, ministries (edit when they change)
 │   └── public/icons/                # The app icon (gold Orthodox cross)
 ├── .github/
 │   ├── workflows/ci.yml             # GitHub Actions: test and build everything on every push, then try the container
@@ -189,6 +195,7 @@ OrthodoxChristianApp/
     │   ├── DatabaseUrl.java             # Online: turns the host's DATABASE_URL into database settings
     │   ├── CalendarController.java      # Web endpoints: /api/today, /api/day/{y}/{m}/{d}
     │   ├── CalendarService.java         # Business logic: converts Orthocal data, applies rules
+    │   ├── CalendarCache.java           # Keeps each day's calendar until midnight (Central)
     │   ├── OrthocalClient.java          # Calls the Orthocal API (with timeouts)
     │   ├── OrthocalDay.java             # Mirror of Orthocal's JSON (input)
     │   ├── LiturgicalDay.java           # Our clean format sent to the frontend (output)
@@ -198,7 +205,7 @@ OrthodoxChristianApp/
     │   ├── ApiExceptionHandler.java     # Turns errors into clear JSON replies
     │   ├── SpaController.java           # Sends the React app for /bible, /prayers, /profile... (bookmarks work)
     │   ├── account/                     # Who you are: AppUser (database table), your account settings
-    │   │   ├── AppUser.java, AppUserRepository.java, TwoFactorMethod.java, TextSize.java, Theme.java
+    │   │   ├── AppUser.java, AppUserRepository.java, TwoFactorMethod.java, TextSize.java, Theme.java, AppStyle.java
     │   │   ├── AccountController.java   # /api/account/...: profile, photo, appearance, phone, verification, two-step
     │   │   ├── AccountService.java, AccountView.java
     │   │   └── ProfilePhoto*.java       # Photo table, and checking/cropping/re-saving uploads
@@ -500,13 +507,15 @@ To bring the accounts along, copy the database across with PostgreSQL's
 - [x] Bottom tab bar: Home, Bible, Prayers, Profile
 - [x] The Orthodox Bible (Septuagint + King James New Testament)
 - [x] Prayer book (traditional prayers; the Archdiocese's own translations with its permission)
-- [ ] Diocese and ministry pages
+- [x] Church tab: hierarchs, diocese and ministry pages, and a daily prayer intention (parish lists come with the parish finder)
 - [x] Link each day to the Archdiocese's Online Liturgical Guide (service texts)
 - [ ] Read and download the day's service texts in the app (waiting on permission)
 
 **Phase 5: Real app and every platform**
 - [x] React frontend (Vite + TypeScript) replacing the preview pages; adds to a phone's home screen
-- [ ] Redis caching, `@Scheduled` 6:00 AM summaries and push notifications
+- [x] Calendar caching (in memory, until midnight Central; an older copy if Orthocal is down)
+- [x] Five Orthodox styles, each light and dark; tabs that remember where you were; pull to refresh
+- [ ] `@Scheduled` 6:00 AM summaries and push notifications
 - [ ] PWA install support, then Android/iOS apps with Capacitor
 - [x] Put the app online: [orthodox-daily.onrender.com](https://orthodox-daily.onrender.com) on Render (`Dockerfile`, `render.yaml`, PostgreSQL), tested in GitHub Actions before every deploy
 - [ ] Before people rely on it: upgrade Render's free database (deleted after 30 days) and send email online (Issue #32)
