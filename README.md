@@ -11,8 +11,9 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 > **Status:** early development (v0.3). The liturgical calendar works for any
 > date, with full scripture text, saints' lives and a fasting rule engine.
 > Accounts work too: email and password with strong password rules, an
-> optional phone number, two-step verification by email or text, and
-> Google/Apple sign-in ready to switch on. See the [Roadmap](#roadmap) below.
+> optional phone number, two-step verification with an authenticator app
+> (or by text or email, once those are set up), and Google sign-in ready to
+> switch on. See the [Roadmap](#roadmap) below.
 >
 > **Try it: [orthodox-daily.onrender.com](https://orthodox-daily.onrender.com)**
 > (on Render's free plan, so the first visit after a quiet spell takes about
@@ -35,8 +36,8 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 | **Find a parish near me** | Search churches by your location, city or ZIP, with distance and directions | 🔜 Next |
 | **Accounts** | Sign up and sign in with email and password; optional phone number | ✅ Working |
 | **Strong passwords** | 12+ characters with upper and lower case, a number and a symbol; live checklist; lockout after 5 wrong tries | ✅ Working |
-| **Two-step verification** | A 6-digit code by email or text message after your password | ✅ Working (codes print in the terminal until [email/SMS are set up](#4-setting-up-sign-in-email-and-text-messages)) |
-| **Sign in with Google / Apple** | One-tap sign-in that creates or links your account (buttons show "not set up yet" until keys are added) | 🔧 Built: needs [keys](#4-setting-up-sign-in-email-and-text-messages) |
+| **Two-step verification** | After your password, a 6-digit code from an authenticator app (Google Authenticator, Microsoft Authenticator, the iPhone Passwords app...) with 10 one-time backup codes; or a code by text message or email | ✅ Authenticator app working online; texts need [Twilio Verify](#codes-by-text-message-twilio-verify), email needs a mail service |
+| **Sign in with Google** | One-tap sign-in that creates or links your account (the button shows "not set up yet" until keys are added) | 🔧 Built: needs [Google keys](#sign-in-with-google) |
 | **Profile** | Profile photo (cropped, resized, location data stripped), patron saint, name day (with a greeting on the day), home parish | ✅ Working |
 | **Text size & dark mode** | Normal / Large / Larger text; match device, light or dark theme; saved to your account | ✅ Working |
 | **Five Orthodox styles** | Illuminated manuscript, Byzantine mosaic, Candlelit vigil, Holy Mountain, and Liturgical seasons (its colors follow the vestments of the Church year); each light and dark; chosen when creating an account, changed in Profile | ✅ Working |
@@ -70,8 +71,9 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 | **Packaging** | Docker (a multi-stage `Dockerfile`) | One container with the React app, the backend and Java, runnable on any host |
 | **Hosting** | [Render](https://render.com) (free plan to start), set up by `render.yaml` | Builds and deploys from GitHub after the checks pass; free HTTPS address |
 | **Security** | Spring Security: sessions, CSRF protection, BCrypt password hashing | Sign-in, two-step verification, protected account pages |
-| **Google / Apple sign-in** | OAuth 2.0 / OpenID Connect (Spring Security OAuth2 Client) | Sign in without a new password |
-| **Email & text messages** | Spring Mail (SMTP) and Twilio | Verification codes; printed in the terminal while developing |
+| **Google sign-in** | OAuth 2.0 / OpenID Connect (Spring Security OAuth2 Client) | Sign in without a new password |
+| **Authenticator codes** | TOTP (RFC 6238), written in `Totp.java`; QR codes drawn with the `qrcode` package | Free two-step verification that needs no email or text service |
+| **Email & text messages** | Spring Mail (SMTP) and Twilio Verify | Verification codes; printed in the terminal while developing |
 | **Maps & location** *(planned)* | Browser Geolocation API + OpenStreetMap | "Near me" parish search and maps |
 | **Cache** | `CalendarCache`: in the server's memory | Each day's calendar data, kept until midnight Central time (one server doesn't need Redis) |
 | **Fonts** | EB Garamond, Cormorant Garamond and Cinzel (SIL Open Font License), packed into the app with Fontsource | Book-like reading text and carved-inscription capitals, with no requests to Google |
@@ -91,8 +93,8 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
  │  iOS (React + Capacitor) │ ◀───── │  • CalendarController        │ ◀───── │  Greek tradition │
  │                          │        │  • CalendarService           │        │  New calendar    │
  │  Today: the React app    │        │  • OrthocalClient            │        └──────────────────┘
- │  (frontend/), on any     │        │  • AuthController, accounts  │  ────▶  Google / Apple sign-in,
- │  browser or home screen  │        │  • Bible, parishes (planned) │         email (SMTP), texts (Twilio)
+ │  (frontend/), on any     │        │  • AuthController, accounts  │  ────▶  Google sign-in,
+ │  browser or home screen  │        │  • Bible, parishes (planned) │         email (SMTP), texts (Twilio Verify)
  └──────────────────────────┘        └──────┬───────────────┬───────┘
                                             │               │
                                      ┌──────▼─────┐   ┌─────▼──────┐
@@ -149,14 +151,20 @@ CalendarController  ──▶  CalendarService  ──▶  OrthocalClient  ─�
 - **Passwords** are checked against `PasswordPolicy` and stored only as BCrypt
   hashes. 5 wrong passwords in a row lock the account for 15 minutes, and a
   wrong email gets the same reply as a wrong password.
-- **Two-step verification:** after a correct password, `AuthController` sends
-  a 6-digit code (by email or text) and only finishes signing in once the code
-  is right. Codes are hashed, expire after 10 minutes and allow 5 tries.
-- **Google / Apple:** Spring Security handles the OAuth/OpenID Connect
-  exchange; `SocialSignInHandler` then finds, links or creates the account.
-  An account whose email was never verified loses its password when the
-  verified owner signs in with Google/Apple, so nobody can claim someone
-  else's email in advance.
+- **Two-step verification:** after a correct password, `AuthController` asks
+  for a 6-digit code and only finishes signing in once it's right:
+  - **Authenticator app** (`AuthenticatorService`, `Totp`): the app and the
+    server share a secret (the QR code) and both work out the same code every
+    30 seconds. Each code works once; 10 one-time backup codes (stored only as
+    hashes) cover a lost phone; 10 wrong codes lock the account for 15 minutes.
+  - **Text or email** (`VerificationCodeService`): a code we send, hashed,
+    valid for 10 minutes with 5 tries. Texts go through Twilio Verify, which
+    makes and checks its own codes. Online, these are only offered when they
+    can really be sent (`CodeChannels`), so nobody can lock themselves out.
+- **Google:** Spring Security handles the OAuth/OpenID Connect exchange;
+  `SocialSignInHandler` then finds, links or creates the account. An account
+  whose email was never verified loses its password when the verified owner
+  signs in with Google, so nobody can claim someone else's email in advance.
 
 ---
 
@@ -188,7 +196,7 @@ OrthodoxChristianApp/
 │   └── ISSUE_TEMPLATE/              # Forms for new user stories and bug reports
 ├── src/test/java/com/orthodox/orthodoxapp/
 │   ├── FastingRuleTest.java         # Tests for the fasting rules
-│   └── auth/                        # Tests for passwords, phones, Apple keys and the whole sign-in flow
+│   └── auth/                        # Tests for passwords, phones, authenticator codes and the whole sign-in flow
 └── src/main/
     ├── java/com/orthodox/orthodoxapp/
     │   ├── OrthodoxappApplication.java  # Starting point: main() boots Spring
@@ -210,13 +218,14 @@ OrthodoxChristianApp/
     │   │   ├── AccountService.java, AccountView.java
     │   │   └── ProfilePhoto*.java       # Photo table, and checking/cropping/re-saving uploads
     │   ├── auth/                        # Signing in
-    │   │   ├── SecurityConfig.java      # Who can see what, CSRF, sign-out, Google/Apple
+    │   │   ├── SecurityConfig.java      # Who can see what, CSRF, sign-out, Google
     │   │   ├── AuthController.java      # /api/auth/...: register, sign in, codes
-    │   │   ├── AuthService.java         # Password checks, lockout, Google/Apple accounts
+    │   │   ├── AuthService.java         # Password checks, lockout, Google accounts
+    │   │   ├── AuthenticatorService.java, Totp.java, BackupCode.java  # Authenticator-app codes and backup codes
     │   │   ├── PasswordPolicy.java      # The strong-password rules
     │   │   ├── VerificationCodeService.java  # 6-digit codes: create, send, check
     │   │   ├── SessionSignIn.java       # Marks a session as signed in
-    │   │   └── SocialClientRegistrations.java, AppleClientSecret.java, SocialSignInHandler.java, ...
+    │   │   └── SocialClientRegistrations.java, SocialSignInHandler.java, ...
     │   └── notify/                      # Sending emails and texts (or printing them while developing)
     └── resources/
         ├── application.properties       # App settings (port, database, secrets file)
@@ -310,10 +319,56 @@ section, and restart the app. The example file explains each setting.
 
 | What | You need | Cost |
 |---|---|---|
-| **Google sign-in** | An OAuth client ID from [Google Cloud Console](https://console.cloud.google.com/apis/credentials), with redirect URI `http://localhost:8080/login/oauth2/code/google` | Free |
-| **Real emails** | An SMTP server, e.g. a Gmail [app password](https://myaccount.google.com/apppasswords) | Free for testing |
-| **Real texts** | A [Twilio](https://www.twilio.com) account and phone number | About 1¢ per text, plus US registration |
-| **Apple sign-in** | An [Apple Developer](https://developer.apple.com/programs/) account and the app online at an `https://` address (Apple doesn't allow `localhost`) | $99/year |
+| **Google sign-in** | An OAuth client from Google Cloud Console (steps below) | Free |
+| **Authenticator-app codes** | Nothing: they work as soon as someone turns them on in Profile | Free |
+| **Codes by text** | A [Twilio](https://www.twilio.com) account with a Verify service (steps below) | About $0.05 per successful verification plus about a cent per text (US) |
+| **Real emails** | An SMTP server, e.g. a Gmail [app password](https://myaccount.google.com/apppasswords). Online this also needs a paid Render plan (the free plan blocks email) | Free on your computer |
+
+#### Sign in with Google
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com) and sign
+   in with your Google account (accept Google Cloud's terms the first time).
+2. Create a project: the project menu at the top → **New project** → name it
+   *Orthodox Daily* → **Create**, then make sure it's selected.
+3. Open **Google Auth Platform** (search for it at the top) → **Get started**:
+   app name *Orthodox Daily*, your email as the support email, audience
+   **External**, your email as the contact → **Create**.
+4. **Clients** → **Create client** → type **Web application**, name
+   *Orthodox Daily web*. Under **Authorized redirect URIs** add both:
+   - `http://localhost:8080/login/oauth2/code/google`
+   - `https://orthodox-daily.onrender.com/login/oauth2/code/google`
+5. **Create**. Copy the **Client ID** and **Client secret** it shows.
+6. **Audience** → **Publish app**, so everyone (not only test users) can sign
+   in. The app only asks for name and email, so Google doesn't need to review it.
+7. Put the two values in `secrets.properties` (`app.auth.google.client-id`,
+   `app.auth.google.client-secret`) for your computer, and in Render →
+   orthodox-daily → **Environment** as `APP_AUTH_GOOGLE_CLIENTID` and
+   `APP_AUTH_GOOGLE_CLIENTSECRET` for the live app. Restart / save.
+
+The client secret is a password for the app: never put it in a file that goes
+to GitHub.
+
+#### Codes by text message (Twilio Verify)
+
+Twilio Verify texts the codes from Twilio's own numbers, so there's no number
+to buy and no US carrier registration (which ordinary app texts now need).
+
+1. Sign up at [twilio.com](https://www.twilio.com/try-twilio) (a free trial).
+2. In the [Twilio Console](https://console.twilio.com), copy the **Account
+   SID** and **Auth Token** from the account's home page.
+3. **Verify** → **Services** → **Create new**: friendly name *Orthodox Daily*
+   (it appears in the text: "Your Orthodox Daily verification code is..."),
+   channel **SMS** → **Create**. Copy its **Service SID** (starts with `VA`).
+4. Put the three values in `secrets.properties` (`app.sms.twilio.account-sid`,
+   `app.sms.twilio.auth-token`, `app.sms.twilio.verify-service-sid`) and in
+   Render's Environment as `APP_SMS_TWILIO_ACCOUNTSID`,
+   `APP_SMS_TWILIO_AUTHTOKEN` and `APP_SMS_TWILIO_VERIFYSERVICESID`.
+5. A trial account only texts numbers you've verified in Twilio (yours), which
+   is enough to test. To text everyone, upgrade the Twilio account (add a
+   payment method there).
+
+Then **Text me a code** appears in Profile → Two-step verification, after a
+person verifies their phone number. Until then it shows "coming soon".
 
 ---
 
@@ -438,6 +493,9 @@ save (the app restarts with them). The name is the setting in capitals, with
 | `spring.mail.username`, `spring.mail.password` | `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` |
 | `spring.mail.properties.mail.smtp.auth` | `SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH` |
 | `spring.mail.properties.mail.smtp.starttls.enable` | `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE` |
+| `app.sms.twilio.account-sid` | `APP_SMS_TWILIO_ACCOUNTSID` |
+| `app.sms.twilio.auth-token` | `APP_SMS_TWILIO_AUTHTOKEN` |
+| `app.sms.twilio.verify-service-sid` | `APP_SMS_TWILIO_VERIFYSERVICESID` |
 
 For Google sign-in online, also add
 `https://orthodox-daily.onrender.com/login/oauth2/code/google` (your real
@@ -493,9 +551,9 @@ To bring the accounts along, copy the database across with PostgreSQL's
 - [x] Spring Security: sign up and sign in with sessions, BCrypt password hashes, CSRF protection
 - [x] Strong password rules with a live checklist; lockout after 5 wrong tries
 - [x] Optional phone number, verified by text
-- [x] Two-step verification by email or text message
-- [ ] Sign in with Google (built; needs keys) and Apple (built; needs Apple Developer account and HTTPS)
-- [ ] Real email and text delivery (built; needs SMTP and Twilio settings)
+- [x] Two-step verification with an authenticator app (QR code, backup codes), or by text or email
+- [ ] Sign in with Google (built; needs keys). Sign in with Apple was dropped (it needs a $99/year Apple Developer account)
+- [ ] Real email and text delivery (built; texts need a Twilio Verify service, email a mail service and a paid Render plan)
 - [ ] Reset a forgotten password
 - [x] Profile: photo, patron saint, name day greeting, home parish (free text for now)
 - [x] Text size and dark mode
@@ -527,8 +585,11 @@ To bring the accounts along, copy the database across with PostgreSQL's
 | Problem | Fix |
 |---|---|
 | `Port 8080 was already in use` | Another copy is still running. Stop it (red ■), or change `server.port` in `application.properties`. |
-| Where's my 6-digit code? | Until email/texts are set up, codes are printed in the VS Code terminal running the app. |
-| No "Continue with Google" button | Fill in both Google settings in `secrets.properties`, then restart the app. |
+| Where's my 6-digit code? | On your computer, until email/texts are set up, codes are printed in the VS Code terminal running the app. With an authenticator app, the code is in the app. |
+| "Continue with Google" says "not set up yet" | Fill in both Google settings (`secrets.properties`, or Render's Environment online), then restart the app. |
+| Google says "redirect_uri_mismatch" | The address in the error must be listed exactly under **Authorized redirect URIs** in Google Cloud Console (see [Sign in with Google](#sign-in-with-google)). |
+| The authenticator code is refused | Use the newest code (it changes every 30 seconds), and check the phone's clock is set automatically. Lost the phone? Use a backup code. |
+| "Text me a code" says "coming soon" | Texts aren't set up on this server yet: see [Codes by text message](#codes-by-text-message-twilio-verify). |
 | I want an empty database | Stop the app and delete the `data/` folder. It's recreated on the next start. |
 | Red squiggles everywhere after opening | The Java extension is still downloading libraries. Wait, or run **Ctrl+Shift+P → Java: Clean Java Language Server Workspace**. |
 | Page says *"Could not load this day"* | Make sure the app is running and you're online. Check the VS Code terminal for an error. |
