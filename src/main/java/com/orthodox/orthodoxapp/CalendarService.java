@@ -3,13 +3,14 @@ package com.orthodox.orthodoxapp;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 /**
  * CalendarService: the "business logic" for the liturgical calendar.
  *
  * It sits between the controller (web requests) and the client (Orthocal):
- *   1. asks OrthocalClient for the raw data,
+ *   1. asks OrthocalClient for the raw data (unless CalendarCache already has the day),
  *   2. converts it into our own clean LiturgicalDay format,
  *   3. applies our rules (e.g. turning fasting codes into a FastingRule).
  *
@@ -24,16 +25,18 @@ public class CalendarService {
     private static final ZoneId PARISH_TIME_ZONE = ZoneId.of("America/Chicago");
 
     private final OrthocalClient orthocalClient;
+    private final CalendarCache cache;
 
     /**
      * DEPENDENCY INJECTION
      * We never write "new OrthocalClient()". Instead, we ask for one in the
      * constructor, and Spring passes in the shared instance it created.
-     * This makes classes easy to test (we could pass in a fake client) and
-     * keeps them loosely connected.
+     * This makes classes easy to test (CalendarServiceTest passes in a fake
+     * client) and keeps them loosely connected.
      */
-    public CalendarService(OrthocalClient orthocalClient) {
+    public CalendarService(OrthocalClient orthocalClient, CalendarCache cache) {
         this.orthocalClient = orthocalClient;
+        this.cache = cache;
     }
 
     /** Today's date in the parish time zone. */
@@ -42,14 +45,27 @@ public class CalendarService {
     }
 
     /**
-     * Gets the liturgical day for any date.
+     * Gets the liturgical day for any date: from the cache if we fetched it
+     * today, otherwise from Orthocal (and then remembered in the cache).
      *
      * @param date the day to look up
      * @return the day in our own format
      */
     public LiturgicalDay getDay(LocalDate date) {
-        OrthocalDay raw = orthocalClient.fetchDay(date);
-        return convert(date, raw);
+        Optional<LiturgicalDay> cached = cache.fresh(date);
+        if (cached.isPresent()) {
+            return cached.get();
+        }
+        try {
+            LiturgicalDay day = convert(date, orthocalClient.fetchDay(date));
+            cache.put(date, day);
+            return day;
+        } catch (RuntimeException orthocalProblem) {
+            // Orthocal is down or too slow. An older copy of the day is far
+            // better than an error; with no copy at all, pass the error on
+            // (ApiExceptionHandler turns it into a friendly message).
+            return cache.stale(date).orElseThrow(() -> orthocalProblem);
+        }
     }
 
     // ------------------------------------------------------------------
