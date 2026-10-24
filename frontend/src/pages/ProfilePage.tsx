@@ -268,6 +268,7 @@ function AppearanceCard({ account, run }: CardProps) {
       </fieldset>
       <fieldset className="choices">
         <legend>Light or dark</legend>
+        {account.style === 'VIGIL' && <p className="hint">Candlelit vigil is always dark.</p>}
         <div className="row">
           {(['SYSTEM', 'LIGHT', 'DARK'] as Theme[]).map((theme) => (
             <label key={theme}>

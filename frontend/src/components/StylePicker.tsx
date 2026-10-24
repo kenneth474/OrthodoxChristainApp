@@ -10,7 +10,7 @@ export function StylePicker({ value, onChange }: { value: AppStyle; onChange: (s
   return (
     <div className="style-picker" role="radiogroup" aria-label="Style">
       {STYLES.map((style) => {
-        const [background, ink, accent, gold] = style.swatches
+        const [background, ink, ...accents] = style.swatches
         return (
           <label key={style.id} className={value === style.id ? 'style-option chosen' : 'style-option'}>
             <input
@@ -20,11 +20,14 @@ export function StylePicker({ value, onChange }: { value: AppStyle; onChange: (s
               checked={value === style.id}
               onChange={() => onChange(style.id)}
             />
-            {/* The preview: the style's background, its lettering and two accents. */}
+            {/* The preview: the style's background, its lettering and its accent colors. */}
             <span className={`style-mini mini-${style.id.toLowerCase()}`} style={{ background, color: ink }} aria-hidden="true">
               <b>Aa</b>
-              <i style={{ background: accent }} />
-              <i style={{ background: gold }} />
+              <span className="mini-accents">
+                {accents.map((color) => (
+                  <i key={color} style={{ background: color }} />
+                ))}
+              </span>
             </span>
             <span className="style-text">
               <span className="style-name">{style.name}</span>

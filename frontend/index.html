@@ -39,7 +39,8 @@
         var theme = saved.theme || 'SYSTEM';
         var deviceDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         root.dataset.theme = theme.toLowerCase();
-        root.dataset.mode = theme === 'DARK' || (theme === 'SYSTEM' && deviceDark) ? 'dark' : 'light';
+        // Candlelit vigil is always dark.
+        root.dataset.mode = saved.style === 'VIGIL' || theme === 'DARK' || (theme === 'SYSTEM' && deviceDark) ? 'dark' : 'light';
         root.dataset.style = (saved.style || 'ILLUMINATED').toLowerCase();
         root.dataset.season = saved.season || 'ordinary';
         root.dataset.textSize = (saved.textSize || 'NORMAL').toLowerCase();

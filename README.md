@@ -40,7 +40,7 @@ One codebase is planned to run on the web, Windows, macOS, Linux, Android and iO
 | **Sign in with Google** | One-tap sign-in that creates or links your account (the button shows "not set up yet" until keys are added) | 🔧 Built: needs [Google keys](#sign-in-with-google) |
 | **Profile** | Profile photo (cropped, resized, location data stripped), patron saint, name day (with a greeting on the day), home parish | ✅ Working |
 | **Text size & dark mode** | Normal / Large / Larger text; match device, light or dark theme; saved to your account | ✅ Working |
-| **Five Orthodox styles** | Illuminated manuscript, Byzantine mosaic, Candlelit vigil, Holy Mountain, and Liturgical seasons (its colors follow the vestments of the Church year); each light and dark; chosen when creating an account, changed in Profile | ✅ Working |
+| **Five Orthodox styles** | Illuminated manuscript (parchment and red rubrics), Byzantine mosaic (lapis and gold tesserae), Candlelit vigil (always dark, candle glow), Holy Mountain (forest green, stone and terracotta roof tiles) and Liturgical seasons (bright and modern, in the color of the season's vestments); light and dark versions; chosen when creating an account, changed in Profile | ✅ Working |
 | **Typikon feast signs** | Each day's rank shown with the service books' signs (red cross in a circle for great feasts, and so on); a red drop capital opens each reading | ✅ Working |
 | **Service texts (PDF)** | Each day links to the Archdiocese's Online Liturgical Guide (Orthros, Divine Liturgy, Vespers) | 🔗 Linked; in-app viewer waiting on permission |
 | **Home parish & bookmarks** | Choose a home parish, bookmark saints and feasts | 🔜 Planned |

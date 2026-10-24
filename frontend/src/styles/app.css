@@ -52,9 +52,8 @@ ul { margin: 0; padding-left: 20px; }
   letter-spacing: var(--label-spacing); font-size: 0.82rem; color: var(--accent);
 }
 .masthead .eyebrow { color: var(--masthead-muted); }
-:root[data-style="illuminated"] .masthead .eyebrow,
-:root[data-style="seasons"] .masthead .eyebrow,
-:root[data-style="athos"] .masthead .eyebrow { color: var(--accent); }
+/* On Illuminated's plain page the date line is in red; on colored bands it stays quiet. */
+:root[data-style="illuminated"] .masthead .eyebrow { color: var(--accent); }
 .eyebrow .dot { color: var(--gold); }
 .masthead h1 {
   font-family: var(--font-display); font-weight: 500; font-size: 2.05rem; line-height: 1.12;
@@ -278,13 +277,18 @@ fieldset.choices .style-picker label.style-option,
 .style-option:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
 .style-mini {
   flex: none; width: 58px; height: 46px; border-radius: 8px; border: 1px solid rgba(0, 0, 0, 0.15);
-  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 6px; gap: 3px; padding: 5px 6px;
+  display: flex; flex-direction: column; justify-content: space-between; padding: 5px 6px; overflow: hidden;
 }
-.style-mini b { grid-column: 1 / 3; font-weight: 500; font-size: 1.15rem; line-height: 1.1; }
-.style-mini i { border-radius: 2px; }
-.mini-illuminated b, .mini-seasons b { font-family: "EB Garamond", serif; }
+.style-mini b { font-weight: 500; font-size: 1.15rem; line-height: 1.1; }
+.mini-accents { display: flex; gap: 3px; }
+.mini-accents i { flex: 1; height: 6px; border-radius: 2px; }
+.mini-illuminated b { font-family: "EB Garamond", serif; }
 .mini-mosaic b, .mini-vigil b { font-family: "Cormorant Garamond", serif; font-weight: 600; }
+.mini-vigil { box-shadow: inset 0 -14px 18px -10px rgba(224, 184, 102, 0.35); }
 .mini-athos b { font-family: "Cinzel", serif; font-size: 1rem; }
+.mini-athos { border-bottom: 5px dotted #a6472a; }
+.mini-seasons { border-top: 7px solid #5b2a6e; }
+.mini-seasons b { font-family: var(--font-ui); font-weight: 600; font-size: 1rem; }
 .style-text { display: flex; flex-direction: column; min-width: 0; }
 .style-name { font-family: var(--font-body); font-size: 1.05rem; color: var(--ink); }
 .style-about { font-size: 0.8rem; color: var(--muted); line-height: 1.35; }
@@ -348,28 +352,36 @@ fieldset.choices .style-picker label.style-option,
    Each style's own details
    ===================================================================== */
 
-/* Illuminated (and Seasons): a book page. Cards are sections divided by
-   rules, not boxes; a double gold rule closes the masthead. */
-:root[data-style="illuminated"] .card,
-:root[data-style="seasons"] .card {
+/* Illuminated: a book page. Cards are sections divided by rules, not
+   boxes; the prayer intention is set apart in a gold frame. */
+:root[data-style="illuminated"] .card {
   border-width: 1px 0; border-color: var(--line); border-radius: 0; background: transparent; padding: 18px 2px 16px;
   margin-bottom: 0;
 }
-:root[data-style="illuminated"] .card + .card,
-:root[data-style="seasons"] .card + .card { border-top: none; }
-:root[data-style="illuminated"] .card-link,
-:root[data-style="seasons"] .card-link { padding-right: 30px; }
-:root[data-style="illuminated"] .intention,
-:root[data-style="seasons"] .intention { background: var(--surface); border: 1px solid var(--gold); margin: 14px 0; padding: 18px; }
-:root[data-style="illuminated"] .fast,
-:root[data-style="seasons"] .fast { border-left: none; }
-:root[data-style="illuminated"] .fast .fast-title::before,
-:root[data-style="seasons"] .fast .fast-title::before { content: "■ "; font-size: 0.7em; vertical-align: 2px; }
+:root[data-style="illuminated"] .card + .card { border-top: none; }
+:root[data-style="illuminated"] .card-link { padding-right: 30px; }
+:root[data-style="illuminated"] .intention { background: var(--surface); border: 1px solid var(--gold); margin: 14px 0; padding: 18px; }
+:root[data-style="illuminated"] .fast { border-left: none; }
+:root[data-style="illuminated"] .fast .fast-title::before { content: "■ "; font-size: 0.7em; vertical-align: 2px; }
 
-/* Seasons: the season's color runs across the top of every screen */
-:root[data-style="seasons"] .masthead { border-top: 5px solid var(--season); }
-:root[data-style="seasons"] .ornament { color: var(--season); }
-:root[data-style="seasons"] .dropcap { color: var(--season); }
+/* Liturgical seasons: bright and modern. A full-width band in the color of
+   the season's vestments, white rounded cards with soft shadows, plain
+   modern labels, and a bar (not a diamond) over the current tab. */
+:root[data-style="seasons"] .masthead { padding-bottom: 20px; }
+:root[data-style="seasons"] .masthead h1 { font-size: 2.25rem; }
+:root[data-style="seasons"] .masthead .ornament { color: rgba(255, 255, 255, 0.7); }
+:root[data-style="seasons"] .masthead .feast-sign,
+:root[data-style="seasons"] .masthead .feast-sign.black { color: #ffffff; }
+:root[data-style="seasons"] .page { padding-top: 18px; }
+:root[data-style="seasons"] h2, :root[data-style="seasons"] h3 { font-weight: 600; font-size: 0.74rem; }
+:root[data-style="seasons"] .card { border: none; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 6px 18px rgba(16, 24, 40, 0.06); }
+:root[data-style="seasons"][data-mode="dark"] .card { border: 1px solid var(--line); box-shadow: none; }
+:root[data-style="seasons"] .chip { border-radius: 10px; background: var(--surface); }
+:root[data-style="seasons"] .season-note {
+  width: fit-content; margin: -2px auto 16px; padding: 6px 14px; border-radius: 999px;
+  background: var(--surface); box-shadow: 0 1px 4px rgba(16, 24, 40, 0.08); color: var(--ink);
+}
+:root[data-style="seasons"] .tab-link.active::before { top: -8px; width: 24px; height: 3px; border-radius: 3px; transform: none; }
 
 /* Mosaic: a lapis band with a row of gold, red and blue tesserae, and
    white cards with a colored top edge, like tiles. */
@@ -389,18 +401,46 @@ fieldset.choices .style-picker label.style-option,
 :root[data-style="mosaic"] .fast { border-top-color: var(--rule); }
 :root[data-style="mosaic"] .tab-link .tab-icon { stroke-width: 1.5; }
 
-/* Vigil: soft rounded cards, like candlelight on wood; a thin gold rule */
-:root[data-style="vigil"] .masthead h1 { font-size: 2.2rem; }
-:root[data-style="vigil"] .card { border-color: var(--line); }
-:root[data-style="vigil"] .intention { border-color: var(--gold); }
-:root[data-style="vigil"][data-mode="dark"] .card { background: linear-gradient(180deg, #201b16, var(--surface)); }
+/* Candlelit vigil: always dark. A warm glow at the top of each screen, a
+   small lit candle above each title, glowing hairlines, soft rounded
+   panels, and a glowing dot over the current tab. */
+:root[data-style="vigil"] .masthead {
+  background: radial-gradient(ellipse 75% 130% at 50% -15%, rgba(224, 184, 102, 0.22), transparent 70%);
+  padding-bottom: 8px;
+}
+:root[data-style="vigil"] .masthead-inner::before {
+  content: ""; display: block; width: 18px; height: 30px; margin: 0 auto 8px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 30'%3E%3Cpath d='M9 1c3 4 4 6.5 4 8.5a4 4 0 0 1-8 0C5 7.5 6 5 9 1z' fill='%23e0b866'/%3E%3Cpath d='M9 5.5c1.4 2 2 3.3 2 4.3a2 2 0 0 1-4 0c0-1 .6-2.3 2-4.3z' fill='%23f6e7c6'/%3E%3Cpath d='M9 13.4v1.8' stroke='%23a3927f' stroke-width='1'/%3E%3Crect x='6.5' y='15.2' width='5' height='14' rx='1' fill='%23efe4d0'/%3E%3C/svg%3E") center / contain no-repeat;
+  filter: drop-shadow(0 0 6px rgba(224, 184, 102, 0.55));
+}
+:root[data-style="vigil"] .masthead h1 { font-size: 2.35rem; }
+:root[data-style="vigil"] .eyebrow { font-size: 0.72rem; }
+:root[data-style="vigil"] .ornament span:first-child { background: linear-gradient(90deg, transparent, currentColor); }
+:root[data-style="vigil"] .ornament span:last-child { background: linear-gradient(90deg, currentColor, transparent); }
+:root[data-style="vigil"] .card { background: linear-gradient(180deg, #1f1a15, var(--surface)); }
+:root[data-style="vigil"] .intention { border-color: rgba(224, 184, 102, 0.5); box-shadow: 0 12px 34px rgba(224, 184, 102, 0.07); }
+:root[data-style="vigil"] .chip { background: var(--surface); }
+:root[data-style="vigil"] .tab-bar { border-top-color: #1d1813; }
+:root[data-style="vigil"] .tab-link.active::before {
+  width: 5px; height: 5px; border-radius: 50%; transform: none; box-shadow: 0 0 8px 2px rgba(224, 184, 102, 0.6);
+}
 
-/* Holy Mountain: square cards framed twice, like a fresco border */
+/* Holy Mountain: a forest-green band with carved cream capitals, a row of
+   terracotta roof tiles hanging beneath it (like the roofs of the Athonite
+   monasteries), grey stone pages and square cards framed twice. */
+:root[data-style="athos"] .masthead { position: relative; padding-bottom: 12px; margin-bottom: 12px; }
+:root[data-style="athos"] .masthead::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -11px; height: 11px;
+  background: radial-gradient(circle at 10px 0, var(--tiles) 9.5px, transparent 10px) 0 0 / 20px 11px repeat-x;
+}
+:root[data-style="athos"] .masthead h1 { font-size: 1.75rem; letter-spacing: 0.05em; }
+:root[data-style="athos"] .masthead .ornament { color: #d3956b; }
+:root[data-style="athos"] .masthead .feast-sign { color: #f0a07a; }
+:root[data-style="athos"] .masthead .feast-sign.black { color: var(--masthead-ink); }
+:root[data-style="athos"] .page { padding-top: 20px; }
 :root[data-style="athos"] .card { box-shadow: inset 0 0 0 4px var(--surface), inset 0 0 0 5px var(--line); padding: 20px 20px 18px; }
-:root[data-style="athos"] .masthead h1 { font-size: 1.7rem; letter-spacing: 0.04em; }
-:root[data-style="athos"] .masthead .ornament { color: var(--rubric); }
 :root[data-style="athos"] .chip, :root[data-style="athos"] button,
-:root[data-style="athos"] .button-link, :root[data-style="athos"] .date-nav input { border-radius: 2px; }
+:root[data-style="athos"] .button-link, :root[data-style="athos"] .date-nav input,
 :root[data-style="athos"] .date-nav button { border-radius: 2px; }
 /* Cinzel's capitals suit titles and labels, but long reading titles are
    easier to read in the book font. */

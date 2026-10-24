@@ -64,8 +64,7 @@
 
 /* ---- 1. Illuminated manuscript: parchment, cinnabar rubrics, gold (also the default) ---- */
 :root,
-:root[data-style="illuminated"],
-:root[data-style="seasons"] {
+:root[data-style="illuminated"] {
   --bg: #f3ecdd;
   --surface: #faf5ea;
   --ink: #2a1f17;
@@ -86,7 +85,6 @@
   --bar: #f3ecdd;
 }
 :root[data-style="illuminated"][data-mode="dark"],
-:root[data-style="seasons"][data-mode="dark"],
 :root:not([data-style])[data-mode="dark"] {
   --bg: #1b1712;
   --surface: #231e18;
@@ -152,53 +150,38 @@
   --bar: #0a1020;
 }
 
-/* ---- 3. Candlelit vigil: candle gold on near-black (dark is its home) ---- */
+/* ---- 3. Candlelit vigil: ALWAYS dark, candle gold on near-black ----
+   A night service, so this style stays dark even when "Light" is chosen
+   (lib/appearance.ts sets data-mode="dark" for it). */
 :root[data-style="vigil"] {
+  color-scheme: dark;
   --font-display: "Cormorant Garamond", Georgia, serif;
   --font-label: var(--font-ui);
   --label-case: uppercase;
   --label-caps: normal;
-  --label-spacing: 0.16em;
-  --card-radius: 14px;
-  /* light: "Vespers at dusk", warm beeswax */
-  --bg: #efe6d6;
-  --surface: #f8f2e7;
-  --ink: #2b2017;
-  --muted: #77665a;
-  --line: #ddcfb8;
-  --accent: #8a5e17;
-  --rubric: #9a3b26;
-  --gold: #a6802f;
+  --label-spacing: 0.18em;
+  --card-radius: 18px;
+  --bg: #0f0c0a;
+  --surface: #1a1612;
+  --ink: #efe4d0;
+  --muted: #a3927f;
+  --line: #2e261e;
+  --accent: #e0b866;
+  --rubric: #e07a4f;          /* the orange of a candle flame */
+  --gold: #e0b866;
   --masthead-bg: transparent;
-  --masthead-ink: var(--ink);
-  --masthead-muted: var(--muted);
-  --tab-bg: #efe6d6;
-  --tab-ink: #8f7f6f;
-  --tab-active: #9a3b26;
-  --button-bg: #2b2017;
-  --button-ink: #f3e6c8;
-  --input-bg: #fffaf2;
-  --bar: #efe6d6;
-}
-:root[data-style="vigil"][data-mode="dark"] {
-  --bg: #14110e;
-  --surface: #1d1915;
-  --ink: #ede3d1;
-  --muted: #a8998a;
-  --line: #30281f;
-  --accent: #d9b26a;
-  --rubric: #d8664e;
-  --gold: #d9b26a;
-  --tab-bg: #100d0b;
-  --tab-ink: #7e7064;
-  --tab-active: #d9b26a;
-  --button-bg: #d9b26a;
-  --button-ink: #14110e;
-  --input-bg: #18140f;
-  --bar: #14110e;
+  --masthead-ink: #f6e7c6;
+  --masthead-muted: #b8a487;
+  --tab-bg: #0b0907;
+  --tab-ink: #7a6b5d;
+  --tab-active: #e0b866;
+  --button-bg: #e0b866;
+  --button-ink: #0f0c0a;
+  --input-bg: #15110e;
+  --bar: #0f0c0a;
 }
 
-/* ---- 4. Holy Mountain: limestone, olive wood, terracotta ---- */
+/* ---- 4. Holy Mountain: forest green, grey stone, terracotta roof tiles ---- */
 :root[data-style="athos"] {
   --font-display: "Cinzel", Georgia, serif;
   --font-label: "Cinzel", Georgia, serif;
@@ -206,79 +189,106 @@
   --label-caps: normal;
   --label-spacing: 0.1em;
   --card-radius: 0;
-  --bg: #ece8e1;
-  --surface: #f7f5f1;
-  --ink: #2e2a25;
-  --muted: #6d665c;
-  --line: #d3ccc0;
-  --accent: #56622f;
-  --rubric: #a9502f;
-  --gold: #9a7b3c;
-  --masthead-bg: transparent;
-  --masthead-ink: var(--ink);
-  --masthead-muted: var(--muted);
-  --tab-bg: #f7f5f1;
-  --tab-ink: #8a8377;
-  --tab-active: #a9502f;
-  --button-bg: #56622f;
-  --button-ink: #f7f5f1;
+  --bg: #dedad0;              /* grey limestone */
+  --surface: #f4f2ec;
+  --ink: #23271d;
+  --muted: #5f6253;
+  --line: #c4bfb1;
+  --accent: #3b4a2c;          /* deep olive */
+  --rubric: #a6472a;          /* terracotta */
+  --gold: #a88a4a;
+  --tiles: #a6472a;
+  --masthead-bg: #2e3a24;     /* forest green */
+  --masthead-ink: #f1ebdc;
+  --masthead-muted: #c6c0a2;
+  --tab-bg: #2e3a24;
+  --tab-ink: #a5ad8f;
+  --tab-active: #f1ebdc;
+  --button-bg: #a6472a;
+  --button-ink: #fbf6ec;
   --input-bg: #ffffff;
-  --bar: #ece8e1;
+  --bar: #2e3a24;
 }
 :root[data-style="athos"][data-mode="dark"] {
-  --bg: #191915;
-  --surface: #22221d;
-  --ink: #e6e1d6;
-  --muted: #a59f92;
-  --line: #37362f;
-  --accent: #a9b67f;
-  --rubric: #d97a55;
-  --gold: #c9a65e;
-  --tab-bg: #141410;
-  --tab-ink: #7f7a6f;
-  --tab-active: #d97a55;
-  --button-bg: #a9b67f;
-  --button-ink: #191915;
-  --input-bg: #1d1d19;
-  --bar: #191915;
+  --bg: #10140e;
+  --surface: #182016;
+  --ink: #e2e5d6;
+  --muted: #98a08a;
+  --line: #29331f;
+  --accent: #a9bb85;
+  --rubric: #dd7f56;
+  --gold: #c8a865;
+  --tiles: #8f3d24;
+  --masthead-bg: #1b2416;
+  --masthead-ink: #ebe5d2;
+  --masthead-muted: #a7ad92;
+  --tab-bg: #1b2416;
+  --tab-ink: #7f8a70;
+  --tab-active: #dd7f56;
+  --button-bg: #dd7f56;
+  --button-ink: #10140e;
+  --input-bg: #141a12;
+  --bar: #1b2416;
 }
 
-/* ---- 5. Liturgical seasons: Illuminated, with the vestment color of the day ----
-   --season is the color of the season (lib/seasons.ts says which applies). */
-:root[data-style="seasons"] { --season: #9a7420; }
-:root[data-style="seasons"][data-season="lent"],
-:root[data-style="seasons"][data-season="cross"] { --season: #5b2a6e; }
-:root[data-style="seasons"][data-season="palms"],
-:root[data-style="seasons"][data-season="pentecost"] { --season: #2f6b3a; }
-:root[data-style="seasons"][data-season="holy-week"] { --season: #2a2622; }
-:root[data-style="seasons"][data-season="pascha"] { --season: #b0221b; }
-:root[data-style="seasons"][data-season="ascension"],
-:root[data-style="seasons"][data-season="nativity"] { --season: #a8862f; }
-:root[data-style="seasons"][data-season="theotokos"] { --season: #2a5d9f; }
-:root[data-style="seasons"][data-season="theophany"],
-:root[data-style="seasons"][data-season="transfiguration"] { --season: #4f7f9c; }
-
-:root[data-style="seasons"][data-mode="dark"] { --season: #d8b25e; }
-:root[data-style="seasons"][data-mode="dark"][data-season="lent"],
-:root[data-style="seasons"][data-mode="dark"][data-season="cross"] { --season: #b48ad0; }
-:root[data-style="seasons"][data-mode="dark"][data-season="palms"],
-:root[data-style="seasons"][data-mode="dark"][data-season="pentecost"] { --season: #84c495; }
-:root[data-style="seasons"][data-mode="dark"][data-season="holy-week"] { --season: #c9c3b8; }
-:root[data-style="seasons"][data-mode="dark"][data-season="pascha"] { --season: #f08070; }
-:root[data-style="seasons"][data-mode="dark"][data-season="ascension"],
-:root[data-style="seasons"][data-mode="dark"][data-season="nativity"] { --season: #e5c77a; }
-:root[data-style="seasons"][data-mode="dark"][data-season="theotokos"] { --season: #8cb6ec; }
-:root[data-style="seasons"][data-mode="dark"][data-season="theophany"],
-:root[data-style="seasons"][data-mode="dark"][data-season="transfiguration"] { --season: #cfe0ea; }
-
-/* [data-mode] makes these as specific as the dark colors above, and being
-   later in the file, they win in both light and dark. */
-:root[data-style="seasons"][data-mode] {
+/* ---- 5. Liturgical seasons: bright and modern, in the season's color ----
+   --season is the color of the vestments for today's season (deep enough
+   for white letters on it); --season-light is the same color lightened, for
+   text on dark backgrounds. lib/seasons.ts says which season applies. */
+:root[data-style="seasons"] {
+  --font-display: "EB Garamond", Georgia, serif;
+  --font-label: var(--font-ui);
+  --label-case: uppercase;
+  --label-caps: normal;
+  --label-spacing: 0.08em;
+  --card-radius: 16px;
+  --season: #8c6d1f;
+  --season-light: #e5c77a;
+  --bg: #f4f4f2;
+  --surface: #ffffff;
+  --ink: #1f2328;
+  --muted: #5f6670;
+  --line: #e4e5e8;
+  --gold: #b08a3e;
   --accent: var(--season);
+  --rubric: var(--season);
+  --masthead-bg: var(--season);
+  --masthead-ink: #ffffff;
+  --masthead-muted: rgba(255, 255, 255, 0.82);
+  --tab-bg: #ffffff;
+  --tab-ink: #7a808a;
   --tab-active: var(--season);
   --button-bg: var(--season);
+  --button-ink: #ffffff;
+  --input-bg: #ffffff;
+  --bar: var(--season);
 }
-:root[data-style="seasons"][data-mode="dark"] { --button-ink: #1b1712; }
+:root[data-style="seasons"][data-mode="dark"] {
+  --bg: #121417;
+  --surface: #1c1f23;
+  --ink: #e8eaed;
+  --muted: #9aa0a8;
+  --line: #2b2f35;
+  --accent: var(--season-light);
+  --rubric: var(--season-light);
+  --tab-bg: #1c1f23;
+  --tab-ink: #858b94;
+  --tab-active: var(--season-light);
+  --button-bg: var(--season-light);
+  --button-ink: #121417;
+  --input-bg: #16191c;
+}
+:root[data-style="seasons"][data-season="lent"],
+:root[data-style="seasons"][data-season="cross"] { --season: #5b2a6e; --season-light: #c39ad8; }
+:root[data-style="seasons"][data-season="palms"],
+:root[data-style="seasons"][data-season="pentecost"] { --season: #2f6b3a; --season-light: #84c495; }
+:root[data-style="seasons"][data-season="holy-week"] { --season: #2a2622; --season-light: #cfc8bc; }
+:root[data-style="seasons"][data-season="pascha"] { --season: #b0221b; --season-light: #f08a7a; }
+:root[data-style="seasons"][data-season="ascension"],
+:root[data-style="seasons"][data-season="nativity"] { --season: #8c6d1f; --season-light: #e5c77a; }
+:root[data-style="seasons"][data-season="theotokos"] { --season: #2a5d9f; --season-light: #8cb6ec; }
+:root[data-style="seasons"][data-season="theophany"],
+:root[data-style="seasons"][data-season="transfiguration"] { --season: #3e6e8c; --season-light: #a9cde2; }
 
 /* ---- Text size ----
    Pages size their text in "rem" (a multiple of the root font size), so

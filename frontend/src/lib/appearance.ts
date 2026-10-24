@@ -4,7 +4,8 @@
   They're set as attributes on the <html> tag, which styles/theme.css reads:
       data-style="illuminated" | "mosaic" | "vigil" | "athos" | "seasons"
       data-mode="light" | "dark"     (worked out from your theme choice:
-                                      "Match my device" follows the device)
+                                      "Match my device" follows the device;
+                                      Candlelit vigil is always dark)
       data-season="lent" | ...       (for the Liturgical seasons style)
       data-text-size="normal" | "large" | "larger"
 
@@ -56,7 +57,8 @@ const darkQuery = typeof window !== 'undefined' ? window.matchMedia?.('(prefers-
 export function apply() {
   const root = document.documentElement
   const theme = current.theme ?? 'SYSTEM'
-  const dark = theme === 'DARK' || (theme === 'SYSTEM' && !!darkQuery?.matches)
+  // Candlelit vigil is a night style: always dark, whatever the theme says.
+  const dark = currentStyle() === 'VIGIL' || theme === 'DARK' || (theme === 'SYSTEM' && !!darkQuery?.matches)
   const season = liturgicalSeason(toIso(new Date())).id
   if (current.season !== season) {
     current = { ...current, season }

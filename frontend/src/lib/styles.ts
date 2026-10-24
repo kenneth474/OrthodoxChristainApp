@@ -12,7 +12,7 @@ export interface StyleInfo {
   id: AppStyle
   name: string
   about: string
-  swatches: string[] // background, text, accents (for the picker preview)
+  swatches: string[] // background, text, then any number of accent colors (for the picker preview)
 }
 
 export const STYLES: StyleInfo[] = [
@@ -31,20 +31,20 @@ export const STYLES: StyleInfo[] = [
   {
     id: 'VIGIL',
     name: 'Candlelit vigil',
-    about: 'Candle gold on near-black, like a church at Vespers.',
-    swatches: ['#14110e', '#ede3d1', '#d9b26a', '#c2412f'],
+    about: 'Always dark: candle gold and a warm glow, like a church at Vespers.',
+    swatches: ['#0f0c0a', '#f6e7c6', '#e0b866', '#e07a4f'],
   },
   {
     id: 'ATHOS',
     name: 'Holy Mountain',
-    about: 'Stone, olive wood and terracotta, like a monastery on Athos.',
-    swatches: ['#ece8e1', '#2e2a25', '#5e6b3a', '#a9502f'],
+    about: 'Forest green, grey stone and terracotta roof tiles, like a monastery on Athos.',
+    swatches: ['#2e3a24', '#f1ebdc', '#a6472a', '#a5ad8f'],
   },
   {
     id: 'SEASONS',
     name: 'Liturgical seasons',
-    about: 'Changes with the Church year, like the colors of the vestments.',
-    swatches: ['#f3ecdd', '#5b2a6e', '#9b1c1c', '#2f6b3a'],
+    about: 'Bright and modern, in the color of the season: purple in Lent, red at Pascha, green at Pentecost...',
+    swatches: ['#ffffff', '#1f2328', '#5b2a6e', '#b0221b', '#2f6b3a', '#2a5d9f'],
   },
 ]
 
