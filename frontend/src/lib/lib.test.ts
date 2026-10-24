@@ -13,6 +13,10 @@ import { forSpeaking, toChunks } from './listen'
 import { expandItems, spokenLine, timesLabel } from './prayerBook'
 import { htmlToSpeech, sanitizeHtml } from './sanitize'
 import { plainScripture, toParagraphs } from './scripture'
+import { allIntentions, intentionFor, type ChurchData } from './church'
+import { daysFromPascha, liturgicalSeason, orthodoxPascha } from './seasons'
+import { tabFor } from './tabs'
+import church from '../../public/data/church.json'
 
 describe('dates', () => {
   it('moves across the ends of months and years', () => {
@@ -110,5 +114,66 @@ describe('prayer book', () => {
     expect(spokenLine({ text: 'Lord, have mercy.', times: 3 })).toHaveLength(3)
     expect(spokenLine({ rubric: 'Prostration' })).toEqual([])
     expect(timesLabel(3)).toBe('Three times')
+  })
+})
+
+describe('the Church year (Liturgical seasons style)', () => {
+  it('finds Orthodox Pascha', () => {
+    // Checked against orthocal.info, which counts days from Pascha.
+    expect(orthodoxPascha(2026)).toBe('2026-04-12')
+    expect(orthodoxPascha(2027)).toBe('2027-05-02')
+    expect(orthodoxPascha(2025)).toBe('2025-04-20') // the year Pascha fell on the same day for everyone
+  })
+
+  it('counts days from Pascha like Orthocal does', () => {
+    expect(daysFromPascha('2026-10-23')).toBe(194)
+    expect(daysFromPascha('2027-04-25')).toBe(-7) // Palm Sunday
+  })
+
+  it('picks the season and vestment color', () => {
+    expect(liturgicalSeason('2027-03-31').id).toBe('lent')
+    expect(liturgicalSeason('2027-04-25').id).toBe('palms')
+    expect(liturgicalSeason('2027-04-30').id).toBe('holy-week')
+    expect(liturgicalSeason('2027-05-02')).toMatchObject({ id: 'pascha', color: 'red' })
+    expect(liturgicalSeason('2027-06-20').id).toBe('pentecost') // Pentecost: Pascha + 49
+    expect(liturgicalSeason('2027-03-25').id).toBe('theotokos') // the Annunciation, even in Lent
+    expect(liturgicalSeason('2026-12-25').id).toBe('nativity')
+    expect(liturgicalSeason('2027-01-06').id).toBe('theophany')
+    expect(liturgicalSeason('2026-09-14').id).toBe('cross')
+    expect(liturgicalSeason('2026-10-23')).toMatchObject({ id: 'ordinary', color: 'gold' })
+  })
+})
+
+describe('tabs', () => {
+  it('knows which tab each address belongs to', () => {
+    expect(tabFor('/')).toBe('home')
+    expect(tabFor('/bible/PSA/50')).toBe('bible')
+    expect(tabFor('/prayers')).toBe('prayers')
+    expect(tabFor('/church/dioceses/wichita')).toBe('church')
+    expect(tabFor('/sign-in')).toBe('profile')
+    expect(tabFor('/biblestudy')).toBeNull() // not /bible
+    expect(tabFor('/nowhere')).toBeNull()
+  })
+})
+
+describe('the daily prayer intention', () => {
+  const data = church as ChurchData
+
+  it('includes the Patriarch, the Metropolitan, every diocese and every ministry', () => {
+    expect(allIntentions(data)).toHaveLength(2 + data.dioceses.length + data.ministries.length)
+  })
+
+  it('changes every day, the same for everyone, and comes round again', () => {
+    const n = allIntentions(data).length
+    expect(intentionFor('2026-10-23', data)).toEqual(intentionFor('2026-10-23', data))
+    expect(intentionFor('2026-10-24', data)).not.toEqual(intentionFor('2026-10-23', data))
+    expect(intentionFor(addDays('2026-10-23', n), data)).toEqual(intentionFor('2026-10-23', data))
+  })
+
+  it('prays for each diocese with its shepherd', () => {
+    const wichita = allIntentions(data).find((i) => i.to === '/church/dioceses/wichita')
+    expect(wichita?.prayer).toBe(
+      'For Archimandrite CALINIC (Berger), and for the clergy and faithful of the Diocese of Wichita and Mid-America.',
+    )
   })
 })

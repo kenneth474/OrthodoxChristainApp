@@ -12,8 +12,10 @@ import { Navigate, useSearchParams } from 'react-router'
 import { useAccount } from '../account-context'
 import { api, ApiError, errorMessage } from '../api'
 import { Avatar, Message, type MessageData } from '../components/common'
+import { Masthead } from '../components/ornaments'
+import { StylePicker } from '../components/StylePicker'
 import { forgetAppearance } from '../lib/appearance'
-import type { Account, SentCode, TextSize, Theme, TwoFactorMethod } from '../types'
+import type { Account, AppStyle, SentCode, TextSize, Theme, TwoFactorMethod } from '../types'
 
 export function ProfilePage() {
   const { account, loading, update } = useAccount()
@@ -40,7 +42,8 @@ export function ProfilePage() {
     try {
       const changed = await action()
       if (changed) update(changed)
-      if (success) setMessage({ kind: 'info', text: success })
+      if (!success) return // nothing to show (e.g. a new style): stay where you are
+      setMessage({ kind: 'info', text: success })
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         update(null) // signed out: the check above then sends you to /sign-in
@@ -60,8 +63,9 @@ export function ProfilePage() {
     })
 
   return (
-    <main className="page narrow">
-      <h1>Your account</h1>
+    <div className="screen">
+      <Masthead eyebrow={<Avatar account={account} className="avatar masthead-avatar" />} title={account.displayName} subtitle={account.email} />
+      <main className="page narrow">
       <Message message={message} />
 
       {/* key=...: if a different account signs in, start these forms afresh. */}
@@ -83,7 +87,8 @@ export function ProfilePage() {
       <button type="button" onClick={signOut}>
         Sign out
       </button>
-    </main>
+      </main>
+    </div>
   )
 }
 
@@ -222,11 +227,15 @@ async function squarePhoto(file: File): Promise<Blob> {
 // ----- Appearance: saved the moment you pick an option -----
 
 function AppearanceCard({ account, run }: CardProps) {
-  const save = (textSize: TextSize, theme: Theme) =>
-    run(() => api<Account>('PUT', '/api/account/appearance', { textSize, theme }))
+  const save = (textSize: TextSize, theme: Theme, style: AppStyle) =>
+    run(() => api<Account>('PUT', '/api/account/appearance', { textSize, theme, style }))
 
   return (
     <Card title="Appearance">
+      <fieldset className="choices">
+        <legend>Style</legend>
+        <StylePicker value={account.style} onChange={(style) => save(account.textSize, account.theme, style)} />
+      </fieldset>
       <fieldset className="choices">
         <legend>Text size</legend>
         <div className="row">
@@ -236,7 +245,7 @@ function AppearanceCard({ account, run }: CardProps) {
                 type="radio"
                 name="textSize"
                 checked={account.textSize === size}
-                onChange={() => save(size, account.theme)}
+                onChange={() => save(size, account.theme, account.style)}
               />{' '}
               {size === 'NORMAL' ? 'Normal' : size === 'LARGE' ? 'Large' : 'Larger'}
             </label>
@@ -244,7 +253,7 @@ function AppearanceCard({ account, run }: CardProps) {
         </div>
       </fieldset>
       <fieldset className="choices">
-        <legend>Theme</legend>
+        <legend>Light or dark</legend>
         <div className="row">
           {(['SYSTEM', 'LIGHT', 'DARK'] as Theme[]).map((theme) => (
             <label key={theme}>
@@ -252,7 +261,7 @@ function AppearanceCard({ account, run }: CardProps) {
                 type="radio"
                 name="theme"
                 checked={account.theme === theme}
-                onChange={() => save(account.textSize, theme)}
+                onChange={() => save(account.textSize, theme, account.style)}
               />{' '}
               {theme === 'SYSTEM' ? 'Match my device' : theme === 'LIGHT' ? 'Light' : 'Dark'}
             </label>

@@ -57,7 +57,7 @@
       "story": "As an Orthodox Christian, I want a clear fasting rule for each day, so that I know which foods to avoid and which are allowed.",
       "criteria": [
         "Each day maps to one FastingRule (strict, wine only, wine & oil, fish, meat fast, fast-free, no fast)",
-        "A colour-coded card lists foods to avoid and foods allowed",
+        "A color-coded card lists foods to avoid and foods allowed",
         "Checked against tricky days such as Cheesefare, Lazarus Saturday, Holy Saturday and Christmas Eve",
         "Automated tests cover every fasting code"
       ],
@@ -481,7 +481,7 @@
         "Five styles: Illuminated manuscript, Byzantine mosaic, Candlelit vigil, Holy Mountain and Liturgical seasons",
         "Each style has a light and a dark version",
         "Choose a style when creating an account, and change it any time in Profile",
-        "Liturgical seasons follows the Church year, like the colours of the vestments"
+        "Liturgical seasons follows the Church year, like the colors of the vestments"
       ],
       "labels": ["user story", "accounts"],
       "milestone": "Phase 5: Every platform"

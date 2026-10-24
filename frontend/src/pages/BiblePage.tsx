@@ -2,18 +2,21 @@
   BiblePage (the Bible tab): the whole Orthodox Bible.
   Old Testament: the Septuagint (Brenton). New Testament: King James.
 
-  Three addresses, three views (see the routes in App.tsx):
+  Three addresses, three views (see TabsHost.tsx):
       /bible            -> all the books
       /bible/PSA        -> the chapters of Psalms
       /bible/PSA/50     -> Psalm 50
   useParams() reads the :book and :chapter parts of the address.
 
-  The text comes from BibleController (/api/bible/...).
+  The text comes from BibleController (/api/bible/...) through useApiData,
+  which keeps what's loaded: leave the Bible tab in the middle of a chapter
+  and it's still there, at the same place, when you come back.
 */
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Link, useParams } from 'react-router'
-import { api, errorMessage } from '../api'
-import { ListenButton, ScriptureText } from '../components/common'
+import { ListenButton, Verses } from '../components/common'
+import { Masthead } from '../components/ornaments'
+import { useApiData } from '../lib/data'
 import { plainScripture, toParagraphs } from '../lib/scripture'
 import type { BibleBook, BibleChapter, Place } from '../types'
 
@@ -21,44 +24,36 @@ const OLD_TESTAMENT = ['Law', 'History', 'Wisdom', 'Prophets', 'Appendix']
 const NEW_TESTAMENT = ['Gospels', 'Acts and Epistles', 'Revelation']
 const LAST_READ_KEY = 'orthodoxDaily.bible.lastRead'
 
-// The list of books never changes, so it's loaded once and kept here
-// (outside the component) for the rest of the visit.
-let booksCache: BibleBook[] | null = null
-
 export function BiblePage() {
   const { book, chapter } = useParams()
-  const [books, setBooks] = useState<BibleBook[] | null>(booksCache)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (booksCache) return
-    api<BibleBook[]>('GET', '/api/bible/books')
-      .then((loaded) => setBooks((booksCache = loaded)))
-      .catch((e) => setError(errorMessage(e)))
-  }, [])
+  const { data: books, error } = useApiData<BibleBook[]>('/api/bible/books')
 
   return (
-    <main className="page reading">
-      <h1>Holy Bible</h1>
-      <p className="subtitle">Old Testament: the Septuagint · New Testament: King James Version</p>
+    <div className="screen">
+      <Masthead
+        eyebrow="Holy Scripture"
+        title="The Holy Bible"
+        subtitle="The Septuagint and the New Testament"
+      />
+      <main className="page reading">
+        {error && <p className="error">{error}</p>}
+        {!books && !error && <p className="status">Opening the Bible…</p>}
+        {books &&
+          (book && chapter ? (
+            <ChapterView code={book} number={Number(chapter)} />
+          ) : book ? (
+            <ChapterList book={books.find((b) => b.code === book)} />
+          ) : (
+            <BookList books={books} />
+          ))}
 
-      {error && <p className="error">{error}</p>}
-      {!books && !error && <p className="status">Opening the Bible…</p>}
-      {books &&
-        (book && chapter ? (
-          <ChapterView code={book} number={Number(chapter)} />
-        ) : book ? (
-          <ChapterList book={books.find((b) => b.code === book)} />
-        ) : (
-          <BookList books={books} />
-        ))}
-
-      <footer className="footer">
-        Old Testament: Sir Lancelot Brenton's translation of the Septuagint (1851), with the Septuagint's Psalm
-        numbering used in Orthodox services. New Testament: King James Version. Both are public domain. Words in{' '}
-        <i>italics</i> were added by the translators.
-      </footer>
-    </main>
+        <footer className="footer">
+          Old Testament: Sir Lancelot Brenton's translation of the Septuagint (1851), with the Septuagint's Psalm
+          numbering used in Orthodox services. New Testament: King James Version. Both are public domain. Words in{' '}
+          <i>italics</i> were added by the translators.
+        </footer>
+      </main>
+    </div>
   )
 }
 
@@ -94,8 +89,12 @@ function BookList({ books }: { books: BibleBook[] }) {
   return (
     <>
       {lastBook && (
-        <Link className="card card-link" to={`/bible/${lastCode}/${lastChapter}`}>
-          Continue reading: <strong>{lastBook.name} {lastChapter}</strong> ›
+        <Link className="card card-link continue" to={`/bible/${lastCode}/${lastChapter}`}>
+          <span className="label">Continue reading</span>
+          <span className="title">
+            {lastBook.name} {lastChapter}
+          </span>
+          <span className="go" aria-hidden="true">›</span>
         </Link>
       )}
       <section className="card">
@@ -142,32 +141,17 @@ function ChapterList({ book }: { book: BibleBook | undefined }) {
 
 /** One chapter's text, with Listen and previous/next. */
 function ChapterView({ code, number }: { code: string; number: number }) {
-  // The last chapter loaded (or its error), with which chapter it's for. A
-  // result for a different chapter is ignored, so moving on shows "Loading…".
-  const wanted = `${code}.${number}`
-  const [loaded, setLoaded] = useState<{ key: string; chapter?: BibleChapter; error?: string } | null>(null)
-  const chapter = loaded?.key === wanted ? (loaded.chapter ?? null) : null
-  const error = loaded?.key === wanted ? (loaded.error ?? null) : null
+  const { data: chapter, error } = useApiData<BibleChapter>(`/api/bible/${encodeURIComponent(code)}/${number}`)
 
+  // Remember it for "Continue reading" once it has loaded.
   useEffect(() => {
-    let cancelled = false
-    const key = `${code}.${number}`
-    api<BibleChapter>('GET', `/api/bible/${encodeURIComponent(code)}/${number}`)
-      .then((result) => {
-        if (cancelled) return
-        setLoaded({ key, chapter: result })
-        window.scrollTo(0, 0)
-        try {
-          localStorage.setItem(LAST_READ_KEY, `${result.code}.${result.chapter}`)
-        } catch {
-          // storage switched off: "Continue reading" just won't appear
-        }
-      })
-      .catch((e) => !cancelled && setLoaded({ key, error: errorMessage(e) }))
-    return () => {
-      cancelled = true
+    if (!chapter) return
+    try {
+      localStorage.setItem(LAST_READ_KEY, `${chapter.code}.${chapter.chapter}`)
+    } catch {
+      // storage switched off: "Continue reading" just won't appear
     }
-  }, [code, number])
+  }, [chapter])
 
   if (error) return <p className="error">{error}</p>
   if (!chapter) return <p className="status">Loading…</p>
@@ -190,16 +174,7 @@ function ChapterView({ code, number }: { code: string; number: number }) {
         />
         <div className="text">
           {/* King James chapters come in paragraphs; Septuagint ones one verse per line. */}
-          {toParagraphs(chapter.verses).map((paragraph) => (
-            <p key={paragraph[0].number}>
-              {paragraph.map((verse) => (
-                <span key={verse.number}>
-                  <sup>{verse.number}</sup>
-                  <ScriptureText text={verse.text} />{' '}
-                </span>
-              ))}
-            </p>
-          ))}
+          <Verses paragraphs={toParagraphs(chapter.verses)} />
         </div>
         <nav className="pager">
           {link(chapter.previous, (t) => `‹ ${t}`)}

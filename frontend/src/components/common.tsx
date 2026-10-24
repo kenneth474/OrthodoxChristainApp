@@ -62,12 +62,48 @@ export function Message({ message }: { message: MessageData | null }) {
  * Shows scripture text with the translators' added words in italics. Those
  * words are in [square brackets] in the text; split() on a pattern with a
  * (group) keeps the bracketed parts at the odd positions of the list.
+ *
+ * dropCap: draw the first letter large, in the style's accent color, the
+ * way service books and Gospel books begin a reading.
  */
-export function ScriptureText({ text }: { text: string }) {
+export function ScriptureText({ text, dropCap = false }: { text: string; dropCap?: boolean }) {
   const parts = text.split(/\[([^\]]+)\]/)
   return (
     <>
-      {parts.map((part, i) => (i % 2 === 1 ? <i key={i}>{part}</i> : <Fragment key={i}>{part}</Fragment>))}
+      {parts.map((part, i) => {
+        if (i % 2 === 1) return <i key={i}>{part}</i>
+        if (dropCap && i === 0 && part.length > 1) {
+          return (
+            <Fragment key={i}>
+              <span className="dropcap">{part.charAt(0)}</span>
+              {part.slice(1)}
+            </Fragment>
+          )
+        }
+        return <Fragment key={i}>{part}</Fragment>
+      })}
+    </>
+  )
+}
+
+/** The scripture verses of a reading or chapter, in paragraphs, the first one with a drop capital. */
+export function Verses({ paragraphs }: { paragraphs: { number: string | number; text: string }[][] }) {
+  return (
+    <>
+      {paragraphs.map((paragraph, p) => (
+        <p key={`${p}-${paragraph[0].number}`}>
+          {paragraph.map((verse, v) => {
+            const first = p === 0 && v === 0
+            return (
+              <span key={`${v}-${verse.number}`}>
+                {/* The opening verse gets the drop capital instead of its number. */}
+                {!first && <sup>{verse.number}</sup>}
+                <ScriptureText text={verse.text} dropCap={first} />{' '}
+              </span>
+            )
+          })}
+        </p>
+      ))}
     </>
   )
 }

@@ -18,7 +18,7 @@
 
     <link rel="icon" type="image/png" href="/icons/icon-32.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#f6f1e7" />
+    <meta name="theme-color" content="#f3ecdd" />
 
     <!-- iPhone home-screen app -->
     <link rel="apple-touch-icon" href="/icons/icon-180.png" />
@@ -26,17 +26,24 @@
     <meta name="apple-mobile-web-app-title" content="Orthodox Daily" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
-    <!-- Apply your saved text size and theme BEFORE anything is drawn, so the
-         page never flashes the wrong colours (src/lib/appearance.ts keeps this
-         copy up to date). -->
+    <!-- Apply your saved style, light/dark choice and text size BEFORE anything
+         is drawn, so the page never flashes the wrong colors
+         (src/lib/appearance.ts keeps this copy up to date and does the rest). -->
     <script>
-      try {
-        var saved = JSON.parse(localStorage.getItem('orthodoxDaily.appearance') || 'null') || {};
-        document.documentElement.dataset.theme = (saved.theme || 'SYSTEM').toLowerCase();
-        document.documentElement.dataset.textSize = (saved.textSize || 'NORMAL').toLowerCase();
-      } catch (e) {
-        document.documentElement.dataset.theme = 'system';
-      }
+      (function () {
+        var root = document.documentElement;
+        var saved = {};
+        try {
+          saved = JSON.parse(localStorage.getItem('orthodoxDaily.appearance') || 'null') || {};
+        } catch (e) {}
+        var theme = saved.theme || 'SYSTEM';
+        var deviceDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        root.dataset.theme = theme.toLowerCase();
+        root.dataset.mode = theme === 'DARK' || (theme === 'SYSTEM' && deviceDark) ? 'dark' : 'light';
+        root.dataset.style = (saved.style || 'ILLUMINATED').toLowerCase();
+        root.dataset.season = saved.season || 'ordinary';
+        root.dataset.textSize = (saved.textSize || 'NORMAL').toLowerCase();
+      })();
     </script>
   </head>
   <body>

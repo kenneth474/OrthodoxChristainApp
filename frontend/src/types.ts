@@ -64,6 +64,8 @@ export interface LiturgicalDay {
 export type TwoFactorMethod = 'NONE' | 'EMAIL' | 'SMS'
 export type TextSize = 'NORMAL' | 'LARGE' | 'LARGER'
 export type Theme = 'SYSTEM' | 'LIGHT' | 'DARK'
+/** The app's five looks (AppStyle.java; see lib/styles.ts). */
+export type AppStyle = 'ILLUMINATED' | 'MOSAIC' | 'VIGIL' | 'ATHOS' | 'SEASONS'
 
 export interface Account {
   email: string
@@ -81,6 +83,7 @@ export interface Account {
   photoVersion: number | null // changes when the photo does; null = no photo
   textSize: TextSize
   theme: Theme
+  style: AppStyle
 }
 
 /** Where a 6-digit code went (SentCode.java). */

@@ -1,0 +1,240 @@
+{
+  "checked": "2026-10-23",
+  "source": "https://www.antiochian.org",
+  "about": [
+    "The Antiochian Orthodox Christian Archdiocese of North America is part of the Orthodox Patriarchate of Antioch and All the East, one of the ancient patriarchates of the Church.",
+    "Antioch is where the disciples were first called Christians (Acts 11:26). The Church there was founded by the Apostles, and St. Peter was its first bishop.",
+    "In North America the Archdiocese grew from the work of St. Raphael of Brooklyn, who cared for Orthodox immigrants from the Middle East more than a century ago. Today it has eight dioceses and more than 275 churches and missions across the United States and Canada, welcoming people of every background.",
+    "Its headquarters are in Englewood, New Jersey."
+  ],
+  "patriarch": {
+    "name": "His Beatitude JOHN X",
+    "title": "Patriarch of Antioch and All the East",
+    "prayer": "For His Beatitude JOHN X, Patriarch of Antioch, and for the Church of Antioch in the Middle East: for peace in her lands and strength for all her faithful.",
+    "link": "https://www.antiochian.org/about"
+  },
+  "metropolitan": {
+    "name": "His Eminence Metropolitan SABA",
+    "title": "Archbishop of New York and Metropolitan of All North America",
+    "prayer": "For His Eminence Metropolitan SABA: that the Lord grant him health, long life and wisdom in shepherding our Archdiocese.",
+    "link": "https://www.antiochian.org/dashboard?name=MetSaba"
+  },
+  "dioceses": [
+    {
+      "id": "new-york",
+      "name": "Diocese of New York and Washington, D.C.",
+      "shepherd": "His Eminence Metropolitan SABA",
+      "role": "Under the Metropolitan's own care",
+      "region": "The New York City and Washington, D.C. areas, and Archdiocese institutions such as the Antiochian Village in Pennsylvania",
+      "churches": "15 churches and missions",
+      "note": "Its Mother Cathedral, St. Nicholas, is in Brooklyn.",
+      "link": "https://www.antiochian.org/dashboard?name=Diocese%20of%20New%20York%20and%20Washington,%20D.C."
+    },
+    {
+      "id": "oakland",
+      "name": "Diocese of Oakland, Charleston and the Mid-Atlantic",
+      "shepherd": "His Grace Bishop THOMAS",
+      "role": "Bishop",
+      "region": "Delaware, Maryland, Pennsylvania, Virginia and West Virginia",
+      "churches": "More than 30 churches and missions",
+      "link": "https://www.antiochian.org/dashboard?name=Diocese%20of%20Oakland,%20Charleston%20and%20the%20Mid-Atlantic"
+    },
+    {
+      "id": "ottawa",
+      "name": "Diocese of Ottawa, Eastern Canada and Upstate New York",
+      "shepherd": "His Grace Bishop ALEXANDER",
+      "role": "Bishop",
+      "region": "Nova Scotia, Ontario, Prince Edward Island, Quebec and New York",
+      "churches": "18 churches and missions",
+      "link": "https://www.antiochian.org/dashboard?name=Diocese%20of%20Ottawa,%20Eastern%20Canada,%20and%20Upstate%20New%20York"
+    },
+    {
+      "id": "worcester",
+      "name": "Diocese of Worcester and New England",
+      "shepherd": "His Grace Bishop JOHN",
+      "role": "Bishop",
+      "region": "Maine, Massachusetts and Rhode Island",
+      "churches": "12 churches",
+      "note": "Its cathedral is in Worcester, Massachusetts.",
+      "link": "https://www.antiochian.org/dashboard?name=Diocese%20of%20Worcester%20and%20New%20England"
+    },
+    {
+      "id": "miami",
+      "name": "Diocese of Miami and the Southeast",
+      "shepherd": "His Grace Bishop NICHOLAS",
+      "role": "Bishop",
+      "region": "Alabama, Arkansas, Florida, Georgia, Louisiana, Mississippi, North Carolina, South Carolina and Tennessee",
+      "churches": "More than 43 churches and missions",
+      "link": "https://www.antiochian.org/dashboard?name=Diocese%20of%20Miami%20and%20the%20Southeast"
+    },
+    {
+      "id": "toledo",
+      "name": "Diocese of Toledo and the Midwest",
+      "shepherd": "Archimandrite JEREMY (Davis)",
+      "role": "Archiepiscopal vicar, caring for the diocese on the Metropolitan's behalf",
+      "region": "Illinois, Indiana, Iowa, Kentucky, Michigan, Minnesota, Missouri, Ohio and Wisconsin",
+      "churches": "About 50 churches and missions",
+      "link": "https://www.antiochian.org/dashboard?name=Diocese%20of%20Toledo%20and%20the%20Midwest"
+    },
+    {
+      "id": "wichita",
+      "name": "Diocese of Wichita and Mid-America",
+      "shepherd": "Archimandrite CALINIC (Berger)",
+      "role": "Archiepiscopal vicar, caring for the diocese on the Metropolitan's behalf",
+      "region": "Colorado, Iowa, Kansas, Louisiana, Nebraska, New Mexico, North Dakota, Oklahoma, South Dakota, Texas and Wyoming",
+      "churches": "More than 50 churches and missions",
+      "link": "https://www.antiochian.org/dashboard?name=Diocese%20of%20Wichita%20and%20Mid-America"
+    },
+    {
+      "id": "los-angeles",
+      "name": "Diocese of Los Angeles and the West",
+      "shepherd": "His Grace Bishop ANTHONY",
+      "role": "Bishop",
+      "region": "The western United States",
+      "note": "Its camp, Camp St. Nicholas, is in the mountains of Frazier Park, California.",
+      "link": "https://www.antiochian.org/dashboard?name=Diocese%20of%20Los%20Angeles%20and%20the%20West"
+    }
+  ],
+  "ministries": [
+    {
+      "id": "women",
+      "name": "Antiochian Women",
+      "about": "Parish chapters of women who meet for fellowship, prayer and charity, and raise funds each year for a chosen cause.",
+      "prayer": "For the Antiochian Women, and for their work of charity and fellowship in every parish.",
+      "link": "https://www.antiochian.org/dashboard?name=Antiochian%20Orthodox%20Christian%20Women%20of%20North%20America"
+    },
+    {
+      "id": "teen-soyo",
+      "name": "Teen SOYO",
+      "about": "The Archdiocese's youth organization, drawing teenagers deeper into the life, worship and service of the Church.",
+      "prayer": "For our young people in Teen SOYO, and for all who guide them.",
+      "link": "https://www.teensoyo.org/"
+    },
+    {
+      "id": "yam",
+      "name": "Young Adult Ministry",
+      "about": "Worship, study and retreats that connect college students and young professionals across the Archdiocese.",
+      "prayer": "For college students and young adults, that they may keep the faith and grow in it.",
+      "link": "https://www.antiochian.org/dashboard?name=Young%20Adult%20Ministry%20(YAM)"
+    },
+    {
+      "id": "village",
+      "name": "Antiochian Village",
+      "about": "The Archdiocese's camp and its conference and retreat center, in the Laurel Highlands of western Pennsylvania.",
+      "prayer": "For the Antiochian Village, its campers, counselors and staff, and all who come there to pray and rest.",
+      "link": "https://www.antiochianvillage.org/"
+    },
+    {
+      "id": "camping",
+      "name": "Camping",
+      "about": "Nine camps across North America where young people live the faith together in fellowship and fun.",
+      "prayer": "For our camps, and for every child and counselor who spends a summer in them.",
+      "link": "https://www.antiochian.org/dashboard?name=Camping"
+    },
+    {
+      "id": "christian-education",
+      "name": "Christian Education",
+      "about": "Resources and support for church schools, teachers and parents, and the yearly Creative Arts Festival.",
+      "prayer": "For church school teachers and for parents, as they hand on the faith to our children.",
+      "link": "https://antiochian.org/dashboard?name=christian%20education"
+    },
+    {
+      "id": "sacred-music",
+      "name": "Sacred Music",
+      "about": "Music, workshops and training for the chanters and choirs who lead the Church's worship.",
+      "prayer": "For chanters, choir directors and singers, who lift up our prayer in song.",
+      "link": "https://www.antiochian.org/dashboard?name=Sacred%20Music"
+    },
+    {
+      "id": "missions",
+      "name": "Missions and Evangelism",
+      "about": "Planting new churches and helping young missions grow into parishes across North America.",
+      "prayer": "For our missions and their priests, and for all who are coming to the Orthodox faith.",
+      "link": "https://www.antiochian.org/dashboard?name=Missions%20and%20Evangelism"
+    },
+    {
+      "id": "charitable-outreach",
+      "name": "Charitable Outreach",
+      "about": "Food for Hungry People, the Children's Relief Fund and grants that help parishes serve those in need.",
+      "prayer": "For the hungry, the poor and orphaned children, and for all who serve them in Christ's name.",
+      "link": "https://www.antiochian.org/dashboard?name=Charitable%20Outreach%20Committee"
+    },
+    {
+      "id": "order",
+      "name": "The Order of St. Ignatius of Antioch",
+      "about": "A fellowship of clergy and laity whose gifts support the work and ministries of the Archdiocese.",
+      "prayer": "For the members of the Order of St. Ignatius, and for all who give to support the Church's work.",
+      "link": "https://orderofstignatius.org/"
+    },
+    {
+      "id": "house-of-studies",
+      "name": "Antiochian House of Studies",
+      "about": "Distance learning in Orthodox theology, from the St. Stephen's Course to master's and doctoral degrees.",
+      "prayer": "For students of theology and their teachers, and for those preparing to serve the Church.",
+      "link": "http://tahos.org/"
+    },
+    {
+      "id": "st-athanasius",
+      "name": "St. Athanasius College and Academy",
+      "about": "Online classes in Orthodox theological studies, and an academy for homeschooling families.",
+      "prayer": "For Orthodox schools and homeschooling families, and for all who teach.",
+      "link": "https://www.stacollege.org"
+    },
+    {
+      "id": "chaplains",
+      "name": "Chaplains and Pastoral Counseling",
+      "about": "Retreats, workshops and courses that support the Archdiocese's chaplains and pastoral counselors.",
+      "prayer": "For chaplains and pastoral counselors, and for all they care for.",
+      "link": "https://www.antiochian.org/dashboard?name=Chaplain%20and%20Pastoral%20Counseling%20Ministry"
+    },
+    {
+      "id": "prison",
+      "name": "Prison Ministry",
+      "about": "Care for people in prison and their families, and help for young people at risk.",
+      "prayer": "For those in prison and their families, and for all who visit them.",
+      "link": "https://www.antiochian.org/dashboard?name=Prison%20Ministry"
+    },
+    {
+      "id": "families",
+      "name": "Marriage and Parish Family Ministries",
+      "about": "Resources and gatherings that strengthen marriages and family life in our parishes.",
+      "prayer": "For husbands and wives, for parents and children, and for every family in our parishes.",
+      "link": "https://www.antiochian.org/dashboard?name=Marriage%20and%20Parish%20Family%20Ministries"
+    },
+    {
+      "id": "monasteries",
+      "name": "Monasteries",
+      "about": "The monastic communities of the Archdiocese, places of prayer that welcome visitors and pilgrims.",
+      "prayer": "For the monks and nuns of our monasteries, who pray for us all.",
+      "link": "https://www.antiochian.org/dashboard?name=Monasteries"
+    },
+    {
+      "id": "western-rite",
+      "name": "Western Rite Vicariate",
+      "about": "Over 20 churches that worship with Western European forms of the Orthodox services.",
+      "prayer": "For the parishes of the Western Rite, and for their clergy and faithful.",
+      "link": "https://www.antiochian.org/dashboard?name=Western%20Rite%20Vicariate"
+    },
+    {
+      "id": "st-julian",
+      "name": "Fellowship of St. Julian",
+      "about": "A fellowship for Orthodox doctors, nurses and other medical professionals.",
+      "prayer": "For doctors, nurses and all who care for the sick.",
+      "link": "https://www.antiochian.org/dashboard?name=Fellowship%20of%20St%20Julian"
+    },
+    {
+      "id": "the-word",
+      "name": "The WORD magazine",
+      "about": "The official magazine of the Archdiocese since 1905, sent to Antiochian households.",
+      "prayer": "For the writers and editors who share the life of the Church through The WORD.",
+      "link": "https://www.antiochian.org/dashboard?name=The%20WORD%20Magazine"
+    },
+    {
+      "id": "ancient-faith",
+      "name": "Ancient Faith Ministries",
+      "about": "Books, radio, podcasts and other media that teach and share the Orthodox faith.",
+      "prayer": "For all who share the Orthodox faith through books, radio and podcasts.",
+      "link": "https://www.antiochian.org/dashboard?name=Ancient%20Faith%20Ministries"
+    }
+  ]
+}

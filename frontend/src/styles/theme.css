@@ -1,180 +1,287 @@
 /*
-  theme.css: the app's colours and text sizes, shared by every page.
+  theme.css: the colors and fonts of the five styles, in light and dark.
 
-  Pages use colour VARIABLES (var(--ink), var(--card)...) instead of fixed
-  colours, so switching to dark mode only means changing the variables here.
-  js/appearance.js sets two attributes on the <html> tag from your account
-  settings:
-      data-theme="system" | "light" | "dark"
-      data-text-size="normal" | "large" | "larger"
+  Every screen is drawn with VARIABLES (var(--ink), var(--accent)...) rather
+  than fixed colors. Each style just sets the variables differently, so one
+  set of page designs (app.css) looks five different ways. lib/appearance.ts
+  puts these attributes on the <html> tag:
+      data-style = illuminated | mosaic | vigil | athos | seasons
+      data-mode  = light | dark
+      data-season = lent | pascha | ... (only used by "seasons")
+      data-text-size = normal | large | larger
+
+  THE VARIABLES
+      --bg, --surface        page background, card background
+      --ink, --muted         main text, quieter text
+      --line                 hairlines and borders
+      --accent               headings, active tab, links: the style's "ink color"
+      --rubric               red-letter details: drop capitals, feast signs
+      --gold                 gilding: ornaments and rules
+      --masthead-*           the band at the top of each screen
+      --tab-*                the tab bar
+      --button-bg/-ink       main buttons
+      --bar                  the phone's status bar color
+      --font-display/-body/-label   titles, reading text, small headings
 */
 
-/* ---- Light colours (the default) ---- */
+/* ---- Shared by every style ---- */
 :root {
-    color-scheme: light;     /* tells the browser to draw form controls in light colours */
-    --bg: #f6f1e7;           /* warm parchment */
-    --card: #fffdf8;
-    --ink: #2b2118;          /* dark brown text */
-    --muted: #7a6a58;
-    --gold: #b08a3e;         /* accents, like icon gilding */
-    --line: #e4d9c4;
-    --input-bg: #ffffff;
-    --primary-bg: #8a6a2a;   /* main buttons */
-    --primary-ink: #ffffff;
-    --soft-red: #f3e3e3;     /* backgrounds for errors and "avoid" foods */
-    --soft-green: #e3efe4;   /* backgrounds for success and "allowed" foods */
-    --soft-gold: #f4e8cc;    /* backgrounds for badges */
-    --soft-gold-ink: #7a5c1c;
+  --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "EB Garamond", Georgia, "Times New Roman", serif;
+  --font-display: "EB Garamond", Georgia, serif;
+  --font-label: "EB Garamond", Georgia, serif;
+  --label-case: none;
+  --label-caps: all-small-caps;
+  --label-spacing: 0.1em;
+  --card-radius: 4px;
 
-    /* One colour per fasting rule (matches FastingRule.java) */
-    --strict: #8b1e1e;       /* deep red */
-    --wine: #9c3d54;
-    --oil: #a8741a;          /* olive-oil amber */
-    --fish: #2d6a8a;         /* sea blue */
-    --meat: #7a5a2e;         /* brown */
-    --free: #2f6b3a;         /* green */
+  /* One color per fasting rule (matches FastingRule.java) */
+  --strict: #8b1e1e;
+  --wine: #9c3d54;
+  --oil: #a8741a;
+  --fish: #2d6a8a;
+  --meat: #7a5a2e;
+  --free: #2f6b3a;
+  --soft-red: #f3e3e3;
+  --soft-green: #e3efe4;
+  --soft-gold: #f4e8cc;
+  --soft-gold-ink: #7a5c1c;
+}
+:root[data-mode="dark"] {
+  color-scheme: dark;
+  --strict: #e58a8a;
+  --wine: #e59ab0;
+  --oil: #e2b65a;
+  --fish: #7cbbe0;
+  --meat: #cfa36b;
+  --free: #85c994;
+  --soft-red: #43231f;
+  --soft-green: #1f3526;
+  --soft-gold: #3a2f1d;
+  --soft-gold-ink: #e6c57e;
+}
+:root[data-mode="light"] { color-scheme: light; }
+
+/* ---- 1. Illuminated manuscript: parchment, cinnabar rubrics, gold (also the default) ---- */
+:root,
+:root[data-style="illuminated"],
+:root[data-style="seasons"] {
+  --bg: #f3ecdd;
+  --surface: #faf5ea;
+  --ink: #2a1f17;
+  --muted: #7a6a58;
+  --line: #ddcfb3;
+  --accent: #a3241b;
+  --rubric: #a3241b;
+  --gold: #b08a3e;
+  --masthead-bg: transparent;
+  --masthead-ink: var(--ink);
+  --masthead-muted: var(--muted);
+  --tab-bg: #f3ecdd;
+  --tab-ink: #8c7b66;
+  --tab-active: #a3241b;
+  --button-bg: #a3241b;
+  --button-ink: #fff8ee;
+  --input-bg: #fffdf7;
+  --bar: #f3ecdd;
+}
+:root[data-style="illuminated"][data-mode="dark"],
+:root[data-style="seasons"][data-mode="dark"],
+:root:not([data-style])[data-mode="dark"] {
+  --bg: #1b1712;
+  --surface: #231e18;
+  --ink: #ece2cf;
+  --muted: #a8998a;
+  --line: #3a3127;
+  --accent: #e0735f;
+  --rubric: #e0735f;
+  --gold: #d4ae62;
+  --tab-bg: #1b1712;
+  --tab-ink: #8d7f70;
+  --tab-active: #e0735f;
+  --button-bg: #c9563f;
+  --button-ink: #fff8ee;
+  --input-bg: #1f1a15;
+  --bar: #1b1712;
 }
 
-/* ---- Dark colours: candlelight on dark wood ----
-   Used when you choose Dark, or choose "Match my device" and your device is
-   in dark mode (that's what the @media rule checks). */
-:root[data-theme="dark"] {
-    color-scheme: dark;
-    --bg: #1b1713;
-    --card: #26201a;
-    --ink: #ece3d3;
-    --muted: #a8998a;
-    --gold: #d4ae62;
-    --line: #3e352b;
-    --input-bg: #1f1a15;
-    --primary-bg: #d4ae62;
-    --primary-ink: #1b1713;
-    --soft-red: #4a2626;
-    --soft-green: #22382a;
-    --soft-gold: #3d3220;
-    --soft-gold-ink: #e6c57e;
-    --strict: #e58a8a;
-    --wine: #e59ab0;
-    --oil: #e2b65a;
-    --fish: #7cbbe0;
-    --meat: #cfa36b;
-    --free: #85c994;
+/* ---- 2. Byzantine mosaic: lapis blue and gold ---- */
+:root[data-style="mosaic"] {
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-label: "Cinzel", Georgia, serif;
+  --label-case: uppercase;
+  --label-caps: normal;
+  --label-spacing: 0.12em;
+  --bg: #f5f2ea;
+  --surface: #ffffff;
+  --ink: #1c2433;
+  --muted: #5d6677;
+  --line: #e1dccf;
+  --accent: #1e3a66;
+  --rubric: #9b2c2c;
+  --gold: #b8913a;
+  --masthead-bg: #1e3a66;
+  --masthead-ink: #f6ebcb;
+  --masthead-muted: #c9b98f;
+  --tab-bg: #1e3a66;
+  --tab-ink: #9fb0c8;
+  --tab-active: #e9d8a6;
+  --button-bg: #1e3a66;
+  --button-ink: #f6ebcb;
+  --input-bg: #ffffff;
+  --bar: #1e3a66;
 }
-@media (prefers-color-scheme: dark) {
-    :root[data-theme="system"] {
-        color-scheme: dark;
-        --bg: #1b1713;
-        --card: #26201a;
-        --ink: #ece3d3;
-        --muted: #a8998a;
-        --gold: #d4ae62;
-        --line: #3e352b;
-        --input-bg: #1f1a15;
-        --primary-bg: #d4ae62;
-        --primary-ink: #1b1713;
-        --soft-red: #4a2626;
-        --soft-green: #22382a;
-        --soft-gold: #3d3220;
-        --soft-gold-ink: #e6c57e;
-        --strict: #e58a8a;
-        --wine: #e59ab0;
-        --oil: #e2b65a;
-        --fish: #7cbbe0;
-        --meat: #cfa36b;
-        --free: #85c994;
-    }
+:root[data-style="mosaic"][data-mode="dark"] {
+  --bg: #0d1424;
+  --surface: #151f35;
+  --ink: #e8e1d0;
+  --muted: #9aa4b8;
+  --line: #26324d;
+  --accent: #d8b663;
+  --rubric: #e07a7a;
+  --gold: #d8b663;
+  --masthead-bg: #0a1020;
+  --masthead-ink: #f3e6c4;
+  --masthead-muted: #b6a77f;
+  --tab-bg: #0a1020;
+  --tab-ink: #7d8aa3;
+  --tab-active: #d8b663;
+  --button-bg: #d8b663;
+  --button-ink: #0d1424;
+  --input-bg: #10192c;
+  --bar: #0a1020;
 }
+
+/* ---- 3. Candlelit vigil: candle gold on near-black (dark is its home) ---- */
+:root[data-style="vigil"] {
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-label: var(--font-ui);
+  --label-case: uppercase;
+  --label-caps: normal;
+  --label-spacing: 0.16em;
+  --card-radius: 14px;
+  /* light: "Vespers at dusk", warm beeswax */
+  --bg: #efe6d6;
+  --surface: #f8f2e7;
+  --ink: #2b2017;
+  --muted: #77665a;
+  --line: #ddcfb8;
+  --accent: #8a5e17;
+  --rubric: #9a3b26;
+  --gold: #a6802f;
+  --masthead-bg: transparent;
+  --masthead-ink: var(--ink);
+  --masthead-muted: var(--muted);
+  --tab-bg: #efe6d6;
+  --tab-ink: #8f7f6f;
+  --tab-active: #9a3b26;
+  --button-bg: #2b2017;
+  --button-ink: #f3e6c8;
+  --input-bg: #fffaf2;
+  --bar: #efe6d6;
+}
+:root[data-style="vigil"][data-mode="dark"] {
+  --bg: #14110e;
+  --surface: #1d1915;
+  --ink: #ede3d1;
+  --muted: #a8998a;
+  --line: #30281f;
+  --accent: #d9b26a;
+  --rubric: #d8664e;
+  --gold: #d9b26a;
+  --tab-bg: #100d0b;
+  --tab-ink: #7e7064;
+  --tab-active: #d9b26a;
+  --button-bg: #d9b26a;
+  --button-ink: #14110e;
+  --input-bg: #18140f;
+  --bar: #14110e;
+}
+
+/* ---- 4. Holy Mountain: limestone, olive wood, terracotta ---- */
+:root[data-style="athos"] {
+  --font-display: "Cinzel", Georgia, serif;
+  --font-label: "Cinzel", Georgia, serif;
+  --label-case: uppercase;
+  --label-caps: normal;
+  --label-spacing: 0.1em;
+  --card-radius: 0;
+  --bg: #ece8e1;
+  --surface: #f7f5f1;
+  --ink: #2e2a25;
+  --muted: #6d665c;
+  --line: #d3ccc0;
+  --accent: #56622f;
+  --rubric: #a9502f;
+  --gold: #9a7b3c;
+  --masthead-bg: transparent;
+  --masthead-ink: var(--ink);
+  --masthead-muted: var(--muted);
+  --tab-bg: #f7f5f1;
+  --tab-ink: #8a8377;
+  --tab-active: #a9502f;
+  --button-bg: #56622f;
+  --button-ink: #f7f5f1;
+  --input-bg: #ffffff;
+  --bar: #ece8e1;
+}
+:root[data-style="athos"][data-mode="dark"] {
+  --bg: #191915;
+  --surface: #22221d;
+  --ink: #e6e1d6;
+  --muted: #a59f92;
+  --line: #37362f;
+  --accent: #a9b67f;
+  --rubric: #d97a55;
+  --gold: #c9a65e;
+  --tab-bg: #141410;
+  --tab-ink: #7f7a6f;
+  --tab-active: #d97a55;
+  --button-bg: #a9b67f;
+  --button-ink: #191915;
+  --input-bg: #1d1d19;
+  --bar: #191915;
+}
+
+/* ---- 5. Liturgical seasons: Illuminated, with the vestment color of the day ----
+   --season is the color of the season (lib/seasons.ts says which applies). */
+:root[data-style="seasons"] { --season: #9a7420; }
+:root[data-style="seasons"][data-season="lent"],
+:root[data-style="seasons"][data-season="cross"] { --season: #5b2a6e; }
+:root[data-style="seasons"][data-season="palms"],
+:root[data-style="seasons"][data-season="pentecost"] { --season: #2f6b3a; }
+:root[data-style="seasons"][data-season="holy-week"] { --season: #2a2622; }
+:root[data-style="seasons"][data-season="pascha"] { --season: #b0221b; }
+:root[data-style="seasons"][data-season="ascension"],
+:root[data-style="seasons"][data-season="nativity"] { --season: #a8862f; }
+:root[data-style="seasons"][data-season="theotokos"] { --season: #2a5d9f; }
+:root[data-style="seasons"][data-season="theophany"],
+:root[data-style="seasons"][data-season="transfiguration"] { --season: #4f7f9c; }
+
+:root[data-style="seasons"][data-mode="dark"] { --season: #d8b25e; }
+:root[data-style="seasons"][data-mode="dark"][data-season="lent"],
+:root[data-style="seasons"][data-mode="dark"][data-season="cross"] { --season: #b48ad0; }
+:root[data-style="seasons"][data-mode="dark"][data-season="palms"],
+:root[data-style="seasons"][data-mode="dark"][data-season="pentecost"] { --season: #84c495; }
+:root[data-style="seasons"][data-mode="dark"][data-season="holy-week"] { --season: #c9c3b8; }
+:root[data-style="seasons"][data-mode="dark"][data-season="pascha"] { --season: #f08070; }
+:root[data-style="seasons"][data-mode="dark"][data-season="ascension"],
+:root[data-style="seasons"][data-mode="dark"][data-season="nativity"] { --season: #e5c77a; }
+:root[data-style="seasons"][data-mode="dark"][data-season="theotokos"] { --season: #8cb6ec; }
+:root[data-style="seasons"][data-mode="dark"][data-season="theophany"],
+:root[data-style="seasons"][data-mode="dark"][data-season="transfiguration"] { --season: #cfe0ea; }
+
+/* [data-mode] makes these as specific as the dark colors above, and being
+   later in the file, they win in both light and dark. */
+:root[data-style="seasons"][data-mode] {
+  --accent: var(--season);
+  --tab-active: var(--season);
+  --button-bg: var(--season);
+}
+:root[data-style="seasons"][data-mode="dark"] { --button-ink: #1b1712; }
 
 /* ---- Text size ----
    Pages size their text in "rem" (a multiple of the root font size), so
    making the root bigger makes ALL the text bigger together. */
 :root[data-text-size="large"] { font-size: 112.5%; }
 :root[data-text-size="larger"] { font-size: 125%; }
-
-/* ---- The tab bar at the bottom of every page (js/tabs.js builds it) ---- */
-.tab-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 20;
-    display: flex;
-    background: var(--card);
-    border-top: 1px solid var(--line);
-    /* env(safe-area-inset-bottom) = room for the iPhone's home bar */
-    padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
-    font-family: system-ui, sans-serif;
-}
-.tab-link {
-    flex: 1;                       /* four equal-width tabs */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    color: var(--muted);
-    text-decoration: none;
-    font-size: 0.7rem;
-}
-.tab-link svg { width: 26px; height: 26px; }
-.tab-link.active { color: var(--gold); font-weight: 600; }
-.tab-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
-.tab-link.active .tab-avatar { outline: 2px solid var(--gold); outline-offset: 1px; }
-/* Leave room at the bottom of each page so the tab bar never covers content. */
-body.has-tab-bar { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
-
-/* ---- "Listen" buttons and the reading-aloud player (js/listen.js) ---- */
-.listen {
-    font-family: system-ui, sans-serif;
-    font-size: 0.8rem;
-    padding: 4px 12px;
-    margin: 2px 0 8px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: var(--card);
-    color: var(--gold);
-    cursor: pointer;
-}
-.listen:hover { border-color: var(--gold); }
-.player {
-    position: fixed;
-    left: 50%;
-    /* just above the tab bar */
-    bottom: calc(72px + env(safe-area-inset-bottom));
-    transform: translateX(-50%);
-    width: min(640px, calc(100% - 24px));
-    background: var(--card);
-    border: 1px solid var(--gold);
-    border-radius: 12px;
-    padding: 10px 14px;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
-    font-family: system-ui, sans-serif;
-    font-size: 0.85rem;
-    z-index: 30;
-}
-.player-title { font-weight: 600; margin-bottom: 6px; }
-.player-controls { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
-.player button, .player select {
-    font: inherit;
-    padding: 4px 10px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--bg);
-    color: var(--ink);
-}
-.player-note { margin-top: 6px; color: var(--muted); }
-
-/* ---- Profile pictures (home page and account page) ---- */
-.avatar {
-    width: 1.9em;
-    height: 1.9em;
-    border-radius: 50%;
-    object-fit: cover;
-    vertical-align: middle;
-    background: var(--soft-gold);
-    color: var(--soft-gold-ink);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-family: system-ui, sans-serif;
-    font-weight: 600;
-}

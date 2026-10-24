@@ -4,12 +4,16 @@
 
   Three panels, one shown at a time: "sign-in", "register" and "code".
 */
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Navigate, useSearchParams } from 'react-router'
 import { useAccount } from '../account-context'
 import { api, ApiError, errorMessage } from '../api'
 import { Message, type MessageData } from '../components/common'
-import type { SignInOptions, SignInResponse } from '../types'
+import { Masthead } from '../components/ornaments'
+import { StylePicker } from '../components/StylePicker'
+import { currentStyle, previewStyle } from '../lib/appearance'
+import { useApiData } from '../lib/data'
+import type { AppStyle, SignInOptions, SignInResponse } from '../types'
 
 type Panel = 'sign-in' | 'register' | 'code'
 
@@ -38,7 +42,8 @@ export function SignInPage() {
       : null,
   )
   const [busy, setBusy] = useState(false) // true while waiting for the server
-  const [options, setOptions] = useState<SignInOptions>({ google: false, apple: false })
+  // Which sign-in buttons are set up (keys in secrets.properties)?
+  const options = useApiData<SignInOptions>('/api/auth/options').data ?? { google: false, apple: false }
 
   // The form fields. Each input shows one of these, and typing updates it:
   // React calls these "controlled" inputs.
@@ -49,13 +54,12 @@ export function SignInPage() {
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
   const [sentTo, setSentTo] = useState<{ sentTo: string; developmentMode: boolean } | null>(null)
-
-  // Which sign-in buttons are set up (keys in secrets.properties)?
-  useEffect(() => {
-    api<SignInOptions>('GET', '/api/auth/options')
-      .then(setOptions)
-      .catch(() => {})
-  }, [])
+  // The look chosen for the new account. Picking one shows it straight away.
+  const [style, setStyle] = useState<AppStyle>(currentStyle)
+  const chooseStyle = (next: AppStyle) => {
+    setStyle(next)
+    previewStyle(next)
+  }
 
   // Just signed in: go where we planned (replace = the Back button won't
   // return to this page). Otherwise, already signed in: nothing to do here.
@@ -105,7 +109,7 @@ export function SignInPage() {
 
   const register = submit(async () => {
     if (password !== confirm) throw new Error("The two passwords don't match.")
-    const result = await api<SignInResponse>('POST', '/api/auth/register', { displayName, email, password, phone })
+    const result = await api<SignInResponse>('POST', '/api/auth/register', { displayName, email, password, phone, style })
     finish(result, '/profile?welcome=1')
   })
 
@@ -123,8 +127,9 @@ export function SignInPage() {
   }
 
   return (
-    <main className="page narrow">
-      <h1>Orthodox Daily</h1>
+    <div className="screen">
+      <Masthead eyebrow="Welcome to" title="Orthodox Daily" subtitle="Sign in to keep your profile, settings and style on every device." />
+      <main className="page narrow">
 
       {panel !== 'code' && (
         <div className="tabs">
@@ -213,6 +218,11 @@ export function SignInPage() {
             <input type="tel" autoComplete="tel" placeholder="(214) 555-0123" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </label>
           <p className="hint">With a phone number you can choose to get sign-in codes by text message.</p>
+          <fieldset className="choices">
+            <legend>Choose a style</legend>
+            <p className="hint">How the app looks. You can change it any time in Profile.</p>
+            <StylePicker value={style} onChange={chooseStyle} />
+          </fieldset>
           <button type="submit" className="primary" disabled={busy}>
             Create account
           </button>
@@ -254,7 +264,8 @@ export function SignInPage() {
           </button>
         </form>
       )}
-    </main>
+      </main>
+    </div>
   )
 }
 
