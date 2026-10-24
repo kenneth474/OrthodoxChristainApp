@@ -61,10 +61,14 @@ public class AccountService {
     }
 
     @Transactional
-    public AppUser updateAppearance(Long userId, TextSize textSize, Theme theme) {
+    public AppUser updateAppearance(Long userId, TextSize textSize, Theme theme, AppStyle style) {
         AppUser user = get(userId);
         user.setTextSize(textSize);
         user.setTheme(theme);
+        // An older copy of the app may not send a style yet: keep the current one.
+        if (style != null) {
+            user.setStyle(style);
+        }
         return users.save(user);
     }
 

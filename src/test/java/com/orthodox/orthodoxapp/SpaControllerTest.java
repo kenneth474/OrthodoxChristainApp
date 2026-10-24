@@ -26,7 +26,7 @@ class SpaControllerTest {
     @Test
     void reactScreensAreServedTheAppPage() throws Exception {
         for (String address : new String[] {"/bible", "/bible/PSA", "/bible/PSA/50", "/prayers",
-                "/prayers/morning", "/profile", "/sign-in"}) {
+                "/prayers/morning", "/church", "/church/dioceses", "/profile", "/sign-in"}) {
             mvc.perform(get(address))
                     .andExpect(status().isOk())
                     .andExpect(forwardedUrl("/index.html"));

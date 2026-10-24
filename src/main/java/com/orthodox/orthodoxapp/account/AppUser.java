@@ -93,6 +93,10 @@ public class AppUser {
     @Enumerated(EnumType.STRING)
     private Theme theme;
 
+    // Which of the app's five looks (see AppStyle). Null = never chosen.
+    @Enumerated(EnumType.STRING)
+    private AppStyle style;
+
     @Column(nullable = false)
     private Instant createdAt;
 
@@ -184,4 +188,7 @@ public class AppUser {
 
     public Theme getTheme() { return theme == null ? Theme.SYSTEM : theme; }
     public void setTheme(Theme theme) { this.theme = theme; }
+
+    public AppStyle getStyle() { return style == null ? AppStyle.ILLUMINATED : style; }
+    public void setStyle(AppStyle style) { this.style = style; }
 }

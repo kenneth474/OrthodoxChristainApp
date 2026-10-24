@@ -11,7 +11,7 @@ import java.util.List;
  * Using an enum instead of plain text means:
  *   - typos are impossible (FastingRule.STRCT will not compile),
  *   - the frontend gets a short, stable code like "WINE_AND_OIL" that it can
- *     use to choose colours and icons.
+ *     use to choose colors and icons.
  *
  * ENUMS CAN HOLD DATA
  * Each value below is created with a label and a list of foods to avoid, like

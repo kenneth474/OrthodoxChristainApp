@@ -200,7 +200,7 @@ class AuthFlowTest {
     @Test
     void googleSignInTakesOverAnAccountWhoseEmailWasNeverVerified() {
         // Someone registers with an email they don't own and never verifies it...
-        AppUser planted = authService.register("victim@example.com", STRONG_PASSWORD, "Not Me", null);
+        AppUser planted = authService.register("victim@example.com", STRONG_PASSWORD, "Not Me", null, null);
 
         // ...then the real owner signs in with Google, which has verified the email.
         AppUser owner = authService.signInWithProvider("google", "google-123", "Victim@Example.com", true, "Real Owner");

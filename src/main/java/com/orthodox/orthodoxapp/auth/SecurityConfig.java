@@ -67,7 +67,7 @@ public class SecurityConfig {
                 // which answers 401 when you're not signed in.
                 .requestMatchers("/", "/index.html", "/assets/**", "/icons/**", "/data/**",
                         "/manifest.webmanifest", "/favicon.ico", "/error").permitAll()
-                .requestMatchers("/bible", "/bible/**", "/prayers", "/prayers/**",
+                .requestMatchers("/bible", "/bible/**", "/prayers", "/prayers/**", "/church", "/church/**",
                         "/profile", "/sign-in").permitAll()
                 .requestMatchers("/api/today", "/api/day/**", "/api/bible/**", "/api/auth/**").permitAll()
                 .anyRequest().authenticated())

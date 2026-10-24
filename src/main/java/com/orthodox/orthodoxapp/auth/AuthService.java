@@ -1,5 +1,6 @@
 package com.orthodox.orthodoxapp.auth;
 
+import com.orthodox.orthodoxapp.account.AppStyle;
 import com.orthodox.orthodoxapp.account.AppUser;
 import com.orthodox.orthodoxapp.account.AppUserRepository;
 import com.orthodox.orthodoxapp.account.TwoFactorMethod;
@@ -53,7 +54,7 @@ public class AuthService {
      * @throws AuthException with a friendly message if anything is wrong
      */
     @Transactional
-    public AppUser register(String email, String password, String displayName, String phone) {
+    public AppUser register(String email, String password, String displayName, String phone, AppStyle style) {
         String cleanEmail = normalizeEmail(email);
         if (cleanEmail.length() > 254 || !EMAIL.matcher(cleanEmail).matches()) {
             throw new AuthException(HttpStatus.BAD_REQUEST, "Enter a valid email address.");
@@ -79,6 +80,7 @@ public class AuthService {
         AppUser user = new AppUser(cleanEmail, cleanName);
         user.setPasswordHash(passwordEncoder.encode(password)); // BCrypt: only the hash is saved
         user.setPhoneNumber(cleanPhone);
+        user.setStyle(style); // null (not chosen) means the default style
         return users.save(user);
     }
 

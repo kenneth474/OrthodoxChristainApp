@@ -2,6 +2,7 @@ package com.orthodox.orthodoxapp.auth;
 
 import com.orthodox.orthodoxapp.account.AccountService;
 import com.orthodox.orthodoxapp.account.AccountView;
+import com.orthodox.orthodoxapp.account.AppStyle;
 import com.orthodox.orthodoxapp.account.AppUser;
 import com.orthodox.orthodoxapp.account.TwoFactorMethod;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,7 +35,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    public record RegisterRequest(String email, String password, String displayName, String phone) {
+    // style: the look chosen while creating the account (optional).
+    public record RegisterRequest(String email, String password, String displayName, String phone, AppStyle style) {
     }
 
     public record SignInRequest(String email, String password) {
@@ -95,7 +97,8 @@ public class AuthController {
     @ResponseStatus(HttpStatus.CREATED)
     public SignInResponse register(@RequestBody RegisterRequest body,
                                    HttpServletRequest request, HttpServletResponse response) {
-        AppUser user = authService.register(body.email(), body.password(), body.displayName(), body.phone());
+        AppUser user = authService.register(
+                body.email(), body.password(), body.displayName(), body.phone(), body.style());
         sessionSignIn.completeSignIn(user, request, response);
         return SignInResponse.signedIn(user);
     }

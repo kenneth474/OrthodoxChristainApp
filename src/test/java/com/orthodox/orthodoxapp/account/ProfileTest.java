@@ -65,18 +65,39 @@ class ProfileTest {
     }
 
     @Test
-    void savesTextSizeAndTheme() throws Exception {
+    void savesTextSizeThemeAndStyle() throws Exception {
         MockHttpSession browser = register("looks@example.com");
         mvc.perform(get("/api/account").session(browser))
                 .andExpect(jsonPath("$.textSize").value("NORMAL"))
-                .andExpect(jsonPath("$.theme").value("SYSTEM"));
+                .andExpect(jsonPath("$.theme").value("SYSTEM"))
+                .andExpect(jsonPath("$.style").value("ILLUMINATED"));
 
         mvc.perform(put("/api/account/appearance").session(browser).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"textSize": "LARGER", "theme": "DARK"}"""))
+                                {"textSize": "LARGER", "theme": "DARK", "style": "VIGIL"}"""))
                 .andExpect(jsonPath("$.textSize").value("LARGER"))
-                .andExpect(jsonPath("$.theme").value("DARK"));
+                .andExpect(jsonPath("$.theme").value("DARK"))
+                .andExpect(jsonPath("$.style").value("VIGIL"));
+
+        // Without a style (an older copy of the app), the chosen style stays.
+        mvc.perform(put("/api/account/appearance").session(browser).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"textSize": "NORMAL", "theme": "LIGHT"}"""))
+                .andExpect(jsonPath("$.style").value("VIGIL"));
+    }
+
+    @Test
+    void theStyleCanBeChosenWhenCreatingTheAccount() throws Exception {
+        MockHttpSession browser = new MockHttpSession();
+        mvc.perform(post("/api/auth/register").session(browser).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email": "mosaic@example.com", "password": "Vespers-at-6:30pm",
+                                 "displayName": "Test", "style": "MOSAIC"}"""))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.account.style").value("MOSAIC"));
     }
 
     @Test

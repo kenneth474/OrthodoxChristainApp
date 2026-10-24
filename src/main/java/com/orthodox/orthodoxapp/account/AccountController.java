@@ -24,7 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
  *
  *   GET    /api/account                  -> your details (AccountView)
  *   PUT    /api/account/profile          -> name, patron saint, name day, home parish
- *   PUT    /api/account/appearance       -> text size and theme
+ *   PUT    /api/account/appearance       -> text size, light/dark theme and style
  *   GET    /api/account/photo            -> your photo (a JPEG)
  *   POST   /api/account/photo            -> upload a new photo
  *   DELETE /api/account/photo            -> remove it
@@ -45,7 +45,7 @@ public class AccountController {
     public record ProfileRequest(String displayName, String patronSaint, String nameDay, String homeParish) {
     }
 
-    public record AppearanceRequest(TextSize textSize, Theme theme) {
+    public record AppearanceRequest(TextSize textSize, Theme theme, AppStyle style) {
     }
 
     public record PhoneRequest(String phone) {
@@ -78,7 +78,8 @@ public class AccountController {
 
     @PutMapping("/appearance")
     public AccountView updateAppearance(@AuthenticationPrincipal SignedInUser me, @RequestBody AppearanceRequest body) {
-        return AccountView.from(accountService.updateAppearance(me.id(), body.textSize(), body.theme()));
+        return AccountView.from(accountService.updateAppearance(
+                me.id(), body.textSize(), body.theme(), body.style()));
     }
 
     // ----- Photo -----

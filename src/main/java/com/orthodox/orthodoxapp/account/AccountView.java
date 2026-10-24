@@ -26,7 +26,8 @@ public record AccountView(
         String homeParish,
         Long photoVersion,
         TextSize textSize,
-        Theme theme) {
+        Theme theme,
+        AppStyle style) {
 
     public static AccountView from(AppUser user) {
         return new AccountView(
@@ -44,6 +45,7 @@ public record AccountView(
                 user.getHomeParish(),
                 user.getPhotoUpdatedAt() == null ? null : user.getPhotoUpdatedAt().toEpochMilli(),
                 user.getTextSize(),
-                user.getTheme());
+                user.getTheme(),
+                user.getStyle());
     }
 }
