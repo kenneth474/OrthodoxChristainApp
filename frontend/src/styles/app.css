@@ -406,3 +406,19 @@ fieldset.choices .style-picker label.style-option,
    easier to read in the book font. */
 :root[data-style="athos"] :is(.readings summary .reference, .intention-heading, .card-link .title, .fast-title,
   ul.link-list .title, ul.people a, .person, .ministry h2) { font-family: var(--font-body); }
+
+/* ---- Two-step verification: authenticator setup and backup codes ---- */
+.authenticator-setup { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.authenticator-setup h3 { margin-top: 0; }
+.authenticator-setup ol { padding-left: 20px; margin: 0 0 10px; }
+/* The QR code always on white, so every phone camera can read it, in any style */
+.qr { display: block; margin: 6px auto 12px; background: #fff; padding: 8px; border-radius: 8px; border: 1px solid var(--line); }
+code.secret { font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.05em; word-break: break-all; }
+.backup-codes ul {
+  list-style: none; padding: 0; margin: 10px 0 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;
+}
+.backup-codes code {
+  display: block; text-align: center; padding: 6px; border: 1px dashed var(--line); border-radius: 8px;
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.95rem; background: var(--bg);
+}
+button.primary-inline { background: var(--button-bg); border-color: var(--button-bg); color: var(--button-ink); }

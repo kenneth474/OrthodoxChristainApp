@@ -32,8 +32,7 @@ import { BiblePage } from '../pages/BiblePage'
 import { ChurchPage } from '../pages/ChurchPage'
 import { HomePage } from '../pages/HomePage'
 import { PrayersPage } from '../pages/PrayersPage'
-import { ProfilePage } from '../pages/ProfilePage'
-import { SignInPage } from '../pages/SignInPage'
+import { ProfileTab } from '../pages/ProfileTab'
 import { PullToRefresh } from './PullToRefresh'
 import { TabBar } from './TabBar'
 
@@ -71,8 +70,9 @@ function tabRoutes(tab: TabId): ReactNode {
     case 'profile':
       return (
         <>
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/sign-in" element={<SignInPage />} />
+          {/* Both show your profile when signed in, the sign-in form when not (ProfileTab). */}
+          <Route path="/profile" element={<ProfileTab />} />
+          <Route path="/sign-in" element={<ProfileTab />} />
         </>
       )
   }
@@ -108,10 +108,11 @@ export function TabsHost() {
 
   const pathFor = useCallback(
     (tab: TabId) => {
+      // The Profile tab has one page: /profile when signed in, /sign-in when not.
+      if (tab === 'profile') return account ? '/profile' : '/sign-in'
       const last = locations[tab] ?? (tab === active ? location : undefined)
       if (last) return last.pathname + last.search
-      const root = TABS.find((t) => t.id === tab)!.root
-      return tab === 'profile' && !account ? '/sign-in' : root
+      return TABS.find((t) => t.id === tab)!.root
     },
     [locations, active, location, account],
   )

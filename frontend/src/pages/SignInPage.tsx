@@ -5,7 +5,7 @@
   Three panels, one shown at a time: "sign-in", "register" and "code".
 */
 import { useState, type FormEvent } from 'react'
-import { Navigate, useSearchParams } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { useAccount } from '../account-context'
 import { api, ApiError, errorMessage } from '../api'
 import { Message, type MessageData } from '../components/common'
@@ -13,7 +13,7 @@ import { Masthead } from '../components/ornaments'
 import { StylePicker } from '../components/StylePicker'
 import { currentStyle, previewStyle } from '../lib/appearance'
 import { useApiData } from '../lib/data'
-import type { AppStyle, SignInOptions, SignInResponse } from '../types'
+import type { AppStyle, SignInOptions, SignInResponse, TwoFactorMethod } from '../types'
 
 type Panel = 'sign-in' | 'register' | 'code'
 
@@ -29,21 +29,19 @@ const RULES: { label: string; test: (p: string) => boolean }[] = [
 ]
 
 export function SignInPage() {
-  const { account, update } = useAccount()
+  const { update } = useAccount()
   const [searchParams] = useSearchParams()
-  // Where to go once signed in. It must win over the "already signed in"
-  // redirect below, which would otherwise always send you to /profile.
-  const [goTo, setGoTo] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   const [panel, setPanel] = useState<Panel>('sign-in')
   const [message, setMessage] = useState<MessageData | null>(
     searchParams.get('error') === 'social'
-      ? { kind: 'error', text: "Signing in with Google or Apple didn't work. Please try again, or use your email." }
+      ? { kind: 'error', text: "Signing in with Google didn't work. Please try again, or use your email." }
       : null,
   )
   const [busy, setBusy] = useState(false) // true while waiting for the server
   // Which sign-in buttons are set up (keys in secrets.properties)?
-  const options = useApiData<SignInOptions>('/api/auth/options').data ?? { google: false, apple: false }
+  const options = useApiData<SignInOptions>('/api/auth/options').data
 
   // The form fields. Each input shows one of these, and typing updates it:
   // React calls these "controlled" inputs.
@@ -53,18 +51,15 @@ export function SignInPage() {
   const [confirm, setConfirm] = useState('')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
-  const [sentTo, setSentTo] = useState<{ sentTo: string; developmentMode: boolean } | null>(null)
+  // Where the second-step code is (after a right password, with two-step verification on).
+  const [challenge, setChallenge] = useState<{ method: TwoFactorMethod; sentTo: string; developmentMode: boolean } | null>(null)
+  const [useBackupCode, setUseBackupCode] = useState(false)
   // The look chosen for the new account. Picking one shows it straight away.
   const [style, setStyle] = useState<AppStyle>(currentStyle)
   const chooseStyle = (next: AppStyle) => {
     setStyle(next)
     previewStyle(next)
   }
-
-  // Just signed in: go where we planned (replace = the Back button won't
-  // return to this page). Otherwise, already signed in: nothing to do here.
-  if (goTo) return <Navigate to={goTo} replace />
-  if (account) return <Navigate to="/profile" replace />
 
   const show = (next: Panel) => {
     setPanel(next)
@@ -89,17 +84,19 @@ export function SignInPage() {
     }
   }
 
-  // Signed in: share the account with the whole app, and go home. React
-  // applies both changes together, so the next draw sees goTo and leaves.
+  // Signed in: share the account with the whole app (the Profile tab then
+  // shows your profile, see ProfileTab) and go where we planned (replace =
+  // the Back button won't return to this page).
   const finish = (result: SignInResponse, to = '/') => {
-    setGoTo(to)
+    navigate(to, { replace: true })
     update(result.account)
   }
 
   const signIn = submit(async () => {
     const result = await api<SignInResponse>('POST', '/api/auth/sign-in', { email, password })
     if (result.status === 'CODE_REQUIRED') {
-      setSentTo({ sentTo: result.sentTo ?? '', developmentMode: result.developmentMode })
+      setChallenge({ method: result.method ?? 'EMAIL', sentTo: result.sentTo ?? '', developmentMode: result.developmentMode })
+      setUseBackupCode(false)
       setCode('')
       show('code')
     } else {
@@ -146,9 +143,8 @@ export function SignInPage() {
 
       {panel !== 'code' && (
         <div>
-          {/* The first Google or Apple sign-in also creates your account. */}
-          <SocialButton provider="Google" enabled={options.google} onUnavailable={setMessage} />
-          <SocialButton provider="Apple" enabled={options.apple} onUnavailable={setMessage} />
+          {/* The first Google sign-in also creates your account. */}
+          <GoogleButton enabled={options?.google ?? false} onUnavailable={setMessage} />
           <p className="divider">or use your email</p>
         </div>
       )}
@@ -229,23 +225,33 @@ export function SignInPage() {
         </form>
       )}
 
-      {panel === 'code' && sentTo && (
+      {panel === 'code' && challenge && (
         <form className="card" onSubmit={verify}>
-          <p>
-            We sent a 6-digit code to <strong>{sentTo.sentTo}</strong>. It expires in 10 minutes.
-          </p>
-          {sentTo.developmentMode && (
+          {challenge.method === 'AUTHENTICATOR' ? (
+            <p>
+              {useBackupCode
+                ? 'Type one of the backup codes you saved when you set up your authenticator app. Each works once.'
+                : 'Open your authenticator app and type the 6-digit code it shows for Orthodox Daily.'}
+            </p>
+          ) : (
+            <p>
+              We {challenge.method === 'SMS' ? 'texted' : 'emailed'} a 6-digit code to <strong>{challenge.sentTo}</strong>.
+              It expires in 10 minutes.
+            </p>
+          )}
+          {challenge.developmentMode && (
             <p className="hint">
               Development mode: codes aren't really sent yet. Find this one in the VS Code terminal where the backend is
               running.
             </p>
           )}
           <label>
-            Code
+            {useBackupCode ? 'Backup code' : 'Code'}
             <input
-              inputMode="numeric"
+              inputMode={useBackupCode ? 'text' : 'numeric'}
               autoComplete="one-time-code"
-              maxLength={6}
+              autoCapitalize="characters"
+              maxLength={useBackupCode ? 11 : 6}
               required
               autoFocus
               value={code}
@@ -255,9 +261,22 @@ export function SignInPage() {
           <button type="submit" className="primary" disabled={busy}>
             Verify and sign in
           </button>
-          <button type="button" className="link" onClick={resend}>
-            Send a new code
-          </button>{' '}
+          {challenge.method === 'AUTHENTICATOR' ? (
+            <button
+              type="button"
+              className="link"
+              onClick={() => {
+                setUseBackupCode(!useBackupCode)
+                setCode('')
+              }}
+            >
+              {useBackupCode ? 'Use the code from my app' : 'Lost your phone? Use a backup code'}
+            </button>
+          ) : (
+            <button type="button" className="link" onClick={resend}>
+              Send a new code
+            </button>
+          )}{' '}
           ·{' '}
           <button type="button" className="link" onClick={() => show('sign-in')}>
             Start over
@@ -270,24 +289,16 @@ export function SignInPage() {
 }
 
 /**
- * "Continue with Google / Apple". These are ordinary links (not React Router
- * links), because signing in leaves our app for Google's or Apple's page and
- * comes back. A provider whose keys aren't set up is greyed out.
+ * "Continue with Google". It's an ordinary link (not a React Router link),
+ * because signing in leaves our app for Google's page and comes back. Until
+ * the Google keys are set up, it's greyed out.
  */
-function SocialButton({
-  provider,
-  enabled,
-  onUnavailable,
-}: {
-  provider: 'Google' | 'Apple'
-  enabled: boolean
-  onUnavailable: (message: MessageData) => void
-}) {
-  const className = `social-button ${provider.toLowerCase()}`
+function GoogleButton({ enabled, onUnavailable }: { enabled: boolean; onUnavailable: (message: MessageData) => void }) {
+  const className = 'social-button google'
   if (enabled) {
     return (
-      <a className={className} href={`/oauth2/authorization/${provider.toLowerCase()}`}>
-        Continue with {provider}
+      <a className={className} href="/oauth2/authorization/google">
+        Continue with Google
       </a>
     )
   }
@@ -299,11 +310,11 @@ function SocialButton({
       onClick={() =>
         onUnavailable({
           kind: 'info',
-          text: `${provider} sign-in isn't switched on yet: the app needs ${provider} keys in secrets.properties. See "Setting up sign-in" in the README.`,
+          text: `Google sign-in isn't switched on yet: the app needs its Google keys. See "Setting up sign-in" in the README.`,
         })
       }
     >
-      Continue with {provider} <span className="soon">(not set up yet)</span>
+      Continue with Google <span className="soon">(not set up yet)</span>
     </button>
   )
 }

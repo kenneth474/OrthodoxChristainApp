@@ -2,36 +2,49 @@
   ProfilePage (the Profile tab, "/profile"): your account.
 
   Profile (photo, name, patron saint, name day, home parish), how the app
-  looks, your email and phone, two-step verification, and signing out.
+  looks, your email and phone, two-step verification (an authenticator app,
+  or codes by text or email where this server can send them), and signing out.
   Talks to AccountController (/api/account/...). Every change sends back the
   updated account, which update() shares with the whole app (so the photo in
   the tab bar changes at once, for example).
 */
-import { useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { Navigate, useSearchParams } from 'react-router'
+import QRCode from 'qrcode'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useNavigate, useSearchParams } from 'react-router'
 import { useAccount } from '../account-context'
 import { api, ApiError, errorMessage } from '../api'
 import { Avatar, Message, type MessageData } from '../components/common'
 import { Masthead } from '../components/ornaments'
 import { StylePicker } from '../components/StylePicker'
 import { forgetAppearance } from '../lib/appearance'
-import type { Account, AppStyle, SentCode, TextSize, Theme, TwoFactorMethod } from '../types'
+import { useApiData } from '../lib/data'
+import type {
+  Account,
+  AppStyle,
+  AuthenticatorSetup,
+  SentCode,
+  SignInOptions,
+  TextSize,
+  Theme,
+  TwoFactorMethod,
+} from '../types'
 
 export function ProfilePage() {
-  const { account, loading, update } = useAccount()
+  const { account, update } = useAccount()
   const [searchParams] = useSearchParams()
-  const [message, setMessage] = useState<MessageData | null>(
-    searchParams.get('welcome')
-      ? { kind: 'info', text: 'Welcome! Verify your email next, so you can use it for two-step verification.' }
-      : null,
-  )
-  // Set when signing out, so we go Home instead of to the sign-in page
-  // (which is where a signed-out visit to this page would normally go).
-  const [leaving, setLeaving] = useState<string | null>(null)
+  const [message, setMessage] = useState<MessageData | null>(null)
+  // Just created your account (/profile?welcome=1)? Greet you, until another message replaces it.
+  const shown: MessageData | null =
+    message ??
+    (searchParams.get('welcome')
+      ? { kind: 'info', text: 'Welcome! To protect your account, turn on two-step verification below.' }
+      : null)
+  const navigate = useNavigate()
+  // What this server can do: send codes by email? by text? (Until it's
+  // known, nothing is offered that might not work.)
+  const options = useApiData<SignInOptions>('/api/auth/options').data ?? { google: false, emailCodes: false, textCodes: false }
 
-  if (leaving) return <Navigate to={leaving} replace />
-  if (loading) return <main className="page narrow"><p className="status">Loading…</p></main>
-  if (!account) return <Navigate to="/sign-in" replace />
+  if (!account) return null // ProfileTab shows the sign-in page instead
 
   /**
    * Runs an account change and shows the result. Anything that changes the
@@ -54,11 +67,13 @@ export function ProfilePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' }) // the message is at the top
   }
 
+  // Signing out goes Home; the Profile tab then shows the sign-in page
+  // (see ProfileTab).
   const signOut = () =>
     run(async () => {
       await api('POST', '/api/auth/sign-out')
       forgetAppearance() // the next person on this device gets the defaults
-      setLeaving('/')
+      navigate('/', { replace: true })
       update(null)
     })
 
@@ -66,21 +81,20 @@ export function ProfilePage() {
     <div className="screen">
       <Masthead eyebrow={<Avatar account={account} className="avatar masthead-avatar" />} title={account.displayName} subtitle={account.email} />
       <main className="page narrow">
-      <Message message={message} />
+      <Message message={shown} />
 
       {/* key=...: if a different account signs in, start these forms afresh. */}
       <ProfileCard key={account.email} account={account} run={run} />
       <AppearanceCard account={account} run={run} />
-      <EmailCard account={account} run={run} setMessage={setMessage} />
-      <PhoneCard key={`phone-${account.email}`} account={account} run={run} setMessage={setMessage} />
-      <TwoFactorCard account={account} run={run} />
+      <EmailCard account={account} run={run} setMessage={setMessage} options={options} />
+      <PhoneCard key={`phone-${account.email}`} account={account} run={run} setMessage={setMessage} options={options} />
+      <TwoFactorCard key={`2fa-${account.email}`} account={account} run={run} options={options} />
 
       <section className="card">
         <h2>Ways you sign in</h2>
         <ul className="plain">
           {account.hasPassword && <li>✓ Email and password</li>}
           {account.googleLinked && <li>✓ Google</li>}
-          {account.appleLinked && <li>✓ Apple</li>}
         </ul>
       </section>
 
@@ -276,6 +290,7 @@ function AppearanceCard({ account, run }: CardProps) {
 
 interface VerifyProps extends CardProps {
   setMessage: (message: MessageData) => void
+  options: SignInOptions
 }
 
 /** "Not verified" / "Verified" */
@@ -314,7 +329,7 @@ function codeSentMessage(result: SentCode, verb: string): MessageData {
   return { kind: 'info', text: `We ${verb} a code to ${result.sentTo}.`, developmentMode: result.developmentMode }
 }
 
-function EmailCard({ account, run, setMessage }: VerifyProps) {
+function EmailCard({ account, run, setMessage, options }: VerifyProps) {
   const [codeSent, setCodeSent] = useState(false)
 
   const sendCode = () =>
@@ -329,26 +344,29 @@ function EmailCard({ account, run, setMessage }: VerifyProps) {
       <p>
         {account.email} <Badge verified={account.emailVerified} />
       </p>
-      {!account.emailVerified && (
-        <>
-          <button type="button" onClick={sendCode}>
-            Email me a code to verify it
-          </button>
-          {codeSent && (
-            <CodeForm
-              label="Email code"
-              onVerify={(code) =>
-                run(() => api<Account>('POST', '/api/account/email/verify', { code }), 'Your email is verified.')
-              }
-            />
-          )}
-        </>
-      )}
+      {!account.emailVerified &&
+        (options.emailCodes ? (
+          <>
+            <button type="button" onClick={sendCode}>
+              Email me a code to verify it
+            </button>
+            {codeSent && (
+              <CodeForm
+                label="Email code"
+                onVerify={(code) =>
+                  run(() => api<Account>('POST', '/api/account/email/verify', { code }), 'Your email is verified.')
+                }
+              />
+            )}
+          </>
+        ) : (
+          <p className="hint">Coming soon: verifying your email, once this server can send email.</p>
+        ))}
     </Card>
   )
 }
 
-function PhoneCard({ account, run, setMessage }: VerifyProps) {
+function PhoneCard({ account, run, setMessage, options }: VerifyProps) {
   const [phone, setPhone] = useState(account.phoneNumber ?? '')
   const [codeSent, setCodeSent] = useState(false)
 
@@ -393,47 +411,79 @@ function PhoneCard({ account, run, setMessage }: VerifyProps) {
           <Badge verified={account.phoneVerified} />
         </p>
       )}
-      {account.phoneNumber && !account.phoneVerified && (
-        <>
-          <button type="button" onClick={sendCode}>
-            Text me a code to verify it
-          </button>
-          {codeSent && (
-            <CodeForm
-              label="Text message code"
-              onVerify={(code) =>
-                run(() => api<Account>('POST', '/api/account/phone/verify', { code }), 'Your phone number is verified.')
-              }
-            />
-          )}
-        </>
-      )}
-      <p className="hint">To remove your number, clear the box and save.</p>
+      {account.phoneNumber &&
+        !account.phoneVerified &&
+        (options.textCodes ? (
+          <>
+            <button type="button" onClick={sendCode}>
+              Text me a code to verify it
+            </button>
+            {codeSent && (
+              <CodeForm
+                label="Text message code"
+                onVerify={(code) =>
+                  run(() => api<Account>('POST', '/api/account/phone/verify', { code }), 'Your phone number is verified.')
+                }
+              />
+            )}
+          </>
+        ) : (
+          <p className="hint">Coming soon: verifying your number by text, so you can get sign-in codes by text.</p>
+        ))}
+      <p className="hint">With a verified number you can get your sign-in codes by text. To remove your number, clear the box and save.</p>
     </Card>
   )
 }
 
 // ----- Two-step verification -----
 
-function TwoFactorCard({ account, run }: CardProps) {
+interface TwoFactorProps extends CardProps {
+  options: SignInOptions
+}
+
+function TwoFactorCard({ account, run, options }: TwoFactorProps) {
   const [method, setMethod] = useState<TwoFactorMethod>(account.twoFactorMethod)
+  // Shown once, right after they're made.
+  const [backupCodes, setBackupCodes] = useState<string[] | null>(null)
 
   if (!account.hasPassword) {
     return (
       <Card title="Two-step verification">
         <p className="hint">
-          You sign in with Google or Apple, which protect your account with their own security, including their own
-          two-step verification.
+          You sign in with Google, which protects your account with its own security, including its own two-step
+          verification.
         </p>
       </Card>
     )
   }
 
-  const choices: { value: TwoFactorMethod; label: string; needs: string; allowed: boolean }[] = [
-    { value: 'NONE', label: 'Off', needs: '', allowed: true },
-    { value: 'EMAIL', label: 'Email me a code', needs: '(verify your email first)', allowed: account.emailVerified },
-    { value: 'SMS', label: 'Text me a code', needs: '(add and verify a phone first)', allowed: account.phoneVerified },
+  if (backupCodes) {
+    return (
+      <Card title="Two-step verification">
+        <BackupCodes codes={backupCodes} onDone={() => setBackupCodes(null)} />
+      </Card>
+    )
+  }
+
+  // Each choice, and why it can't be picked yet (if it can't).
+  const why = (available: boolean, ready: boolean, needs: string) =>
+    !available ? '(coming soon)' : !ready ? needs : ''
+  const choices: { value: TwoFactorMethod; label: string; note: string }[] = [
+    { value: 'NONE', label: 'Off', note: '' },
+    { value: 'AUTHENTICATOR', label: 'Authenticator app (recommended)', note: '' },
+    {
+      value: 'SMS',
+      label: 'Text me a code',
+      note: why(options.textCodes, account.phoneVerified, '(add and verify your phone first)'),
+    },
+    {
+      value: 'EMAIL',
+      label: 'Email me a code',
+      note: why(options.emailCodes, account.emailVerified, '(verify your email first)'),
+    },
   ]
+
+  const settingUpApp = method === 'AUTHENTICATOR' && account.twoFactorMethod !== 'AUTHENTICATOR'
 
   return (
     <Card title="Two-step verification">
@@ -441,6 +491,11 @@ function TwoFactorCard({ account, run }: CardProps) {
         After your password, we'll also ask for a 6-digit code, so a stolen password alone isn't enough to get into your
         account.
       </p>
+      {account.twoFactorMethod === 'AUTHENTICATOR' && (
+        <p>
+          <span className="badge ok">On</span> Codes come from your authenticator app.
+        </p>
+      )}
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -452,15 +507,162 @@ function TwoFactorCard({ account, run }: CardProps) {
             <input
               type="radio"
               name="method"
-              disabled={!choice.allowed}
+              disabled={choice.note !== ''}
               checked={method === choice.value}
               onChange={() => setMethod(choice.value)}
             />{' '}
-            {choice.label} {!choice.allowed && <span className="hint">{choice.needs}</span>}
+            {choice.label} {choice.note && <span className="hint">{choice.note}</span>}
           </label>
         ))}
-        <button type="submit">Save</button>
+        {!settingUpApp && method !== account.twoFactorMethod && <button type="submit">Save</button>}
       </form>
+
+      {settingUpApp && (
+        <AuthenticatorSetupForm
+          run={run}
+          onDone={(codes) => setBackupCodes(codes)}
+          onCancel={() => setMethod(account.twoFactorMethod)}
+        />
+      )}
+
+      {account.twoFactorMethod === 'AUTHENTICATOR' && method === 'AUTHENTICATOR' && (
+        <button
+          type="button"
+          className="link"
+          onClick={() =>
+            run(async () => {
+              const result = await api<{ backupCodes: string[] }>('POST', '/api/account/authenticator/backup-codes')
+              setBackupCodes(result.backupCodes)
+            })
+          }
+        >
+          Make new backup codes
+        </button>
+      )}
     </Card>
+  )
+}
+
+/**
+ * Setting up an authenticator app: scan the QR code (or type the key, or on
+ * an iPhone tap "Add to Passwords"), then type the code the app shows. The
+ * server only switches the app on once that code is right.
+ */
+function AuthenticatorSetupForm({
+  run,
+  onDone,
+  onCancel,
+}: {
+  run: Run
+  onDone: (backupCodes: string[]) => void
+  onCancel: () => void
+}) {
+  const [setup, setSetup] = useState<AuthenticatorSetup | null>(null)
+  const [qr, setQr] = useState<string | null>(null)
+  const [code, setCode] = useState('')
+
+  // Ask the server for a new secret once, when this form appears.
+  useEffect(() => {
+    let cancelled = false
+    api<AuthenticatorSetup>('POST', '/api/account/authenticator/setup')
+      .then((result) => {
+        if (cancelled) return
+        setSetup(result)
+        // Draw the QR code as a picture (a "data:" address the <img> can show).
+        return QRCode.toDataURL(result.uri, { margin: 1, width: 220 }).then((url) => !cancelled && setQr(url))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (!setup) return <p className="status">Preparing…</p>
+
+  // "ABCD EFGH ..." is easier to type than one long run of letters.
+  const groupedSecret = setup.secret.match(/.{1,4}/g)?.join(' ') ?? setup.secret
+
+  return (
+    <div className="authenticator-setup">
+      <h3>Set up your authenticator app</h3>
+      <ol>
+        <li>
+          Open an authenticator app: Google Authenticator, Microsoft Authenticator, or on iPhone the Passwords app.
+        </li>
+        <li>Scan this code with it:</li>
+      </ol>
+      {qr && <img className="qr" src={qr} width={220} height={220} alt="QR code for your authenticator app" />}
+      <p className="hint">
+        On this phone? <a href={setup.uri}>Add it to your authenticator app</a>, or type this key:{' '}
+        <code className="secret">{groupedSecret}</code>
+      </p>
+      <form
+        className="inline"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void run(async () => {
+            const result = await api<{ account: Account; backupCodes: string[] }>(
+              'POST',
+              '/api/account/authenticator/confirm',
+              { code },
+            )
+            onDone(result.backupCodes)
+            return result.account
+          })
+        }}
+      >
+        <input
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          placeholder="6-digit code from the app"
+          aria-label="Code from your authenticator app"
+          required
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+        />
+        <button type="submit">Turn on</button>
+      </form>
+      <button type="button" className="link" onClick={onCancel}>
+        Cancel
+      </button>
+    </div>
+  )
+}
+
+/** The 10 backup codes, shown once, with a button to copy them. */
+function BackupCodes({ codes, onDone }: { codes: string[]; onDone: () => void }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <div className="backup-codes">
+      <p>
+        <span className="badge ok">On</span> Your authenticator app is set up.
+      </p>
+      <p>
+        <strong>Save these backup codes</strong> somewhere safe (a password manager, or on paper). If you lose your phone,
+        each one lets you sign in once. They won't be shown again.
+      </p>
+      <ul>
+        {codes.map((code) => (
+          <li key={code}>
+            <code>{code}</code>
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        onClick={() =>
+          navigator.clipboard
+            ?.writeText(codes.join('\n'))
+            .then(() => setCopied(true))
+            .catch(() => {})
+        }
+      >
+        {copied ? 'Copied' : 'Copy the codes'}
+      </button>{' '}
+      <button type="button" className="primary-inline" onClick={onDone}>
+        I've saved them
+      </button>
+    </div>
   )
 }

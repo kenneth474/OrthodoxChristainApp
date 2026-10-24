@@ -61,7 +61,7 @@ export interface LiturgicalDay {
 
 // ----- Accounts: /api/account and /api/auth (AccountView.java, AuthController.java) -----
 
-export type TwoFactorMethod = 'NONE' | 'EMAIL' | 'SMS'
+export type TwoFactorMethod = 'NONE' | 'EMAIL' | 'SMS' | 'AUTHENTICATOR'
 export type TextSize = 'NORMAL' | 'LARGE' | 'LARGER'
 export type Theme = 'SYSTEM' | 'LIGHT' | 'DARK'
 /** The app's five looks (AppStyle.java; see lib/styles.ts). */
@@ -76,7 +76,6 @@ export interface Account {
   twoFactorMethod: TwoFactorMethod
   hasPassword: boolean
   googleLinked: boolean
-  appleLinked: boolean
   patronSaint: string | null
   nameDay: string | null // "MM-DD"
   homeParish: string | null
@@ -94,14 +93,23 @@ export interface SentCode {
 
 export interface SignInResponse {
   status: 'SIGNED_IN' | 'CODE_REQUIRED'
+  method: TwoFactorMethod | null // where the code is: sent by EMAIL or SMS, or in the AUTHENTICATOR app
   sentTo: string | null
   developmentMode: boolean
   account: Account | null
 }
 
+/** What the server offers (AuthController.SignInOptions). */
 export interface SignInOptions {
-  google: boolean
-  apple: boolean
+  google: boolean // the "Continue with Google" button works
+  emailCodes: boolean // codes can really be emailed
+  textCodes: boolean // codes can really be texted
+}
+
+/** Setting up an authenticator app (AuthenticatorService.Setup). */
+export interface AuthenticatorSetup {
+  secret: string // to type into the app by hand
+  uri: string // "otpauth://...": what the QR code holds
 }
 
 // ----- The Bible: /api/bible (BibleBook.java, BibleChapter.java) -----
