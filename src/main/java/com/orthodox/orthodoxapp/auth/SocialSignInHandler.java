@@ -14,11 +14,11 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 /**
- * SocialSignInHandler: runs after Google or Apple has confirmed who you are.
+ * SocialSignInHandler: runs after Google has confirmed who you are.
  *
- * Spring Security has already checked the provider's ID token. Here we find
- * or create your AppUser (AuthService.signInWithProvider), sign you in with
- * the same kind of session a password sign-in uses, and send you home.
+ * Spring Security has already checked Google's ID token. Here we find or
+ * create your AppUser (AuthService.signInWithGoogle), sign you in with the
+ * same kind of session a password sign-in uses, and send you home.
  */
 @Component
 public class SocialSignInHandler implements AuthenticationSuccessHandler {
@@ -37,13 +37,12 @@ public class SocialSignInHandler implements AuthenticationSuccessHandler {
         OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
         OidcUser person = (OidcUser) token.getPrincipal();
 
-        // Google sends email_verified as true/false; Apple sends the text "true"/"false".
-        // String.valueOf handles both.
+        // email_verified: whether Google has confirmed the address. String.valueOf
+        // copes with it arriving as true/false or as the text "true"/"false".
         boolean emailVerified = "true".equals(String.valueOf(person.getClaims().get(StandardClaimNames.EMAIL_VERIFIED)));
 
         try {
-            AppUser user = authService.signInWithProvider(
-                    token.getAuthorizedClientRegistrationId(), // "google" or "apple"
+            AppUser user = authService.signInWithGoogle(
                     person.getSubject(),
                     person.getEmail(),
                     emailVerified,

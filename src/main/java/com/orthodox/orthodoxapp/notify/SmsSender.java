@@ -1,8 +1,9 @@
 package com.orthodox.orthodoxapp.notify;
 
 /**
- * SmsSender: sends one text message. Like EmailSender, it has a free
- * development version (ConsoleSmsSender) and a real one (TwilioSmsSender).
+ * SmsSender: sends one text message. Only the development version exists
+ * (ConsoleSmsSender, which prints it): real codes by text go through Twilio
+ * Verify instead (see TwilioVerify), which makes and sends its own codes.
  */
 public interface SmsSender {
 

@@ -1,9 +1,12 @@
 package com.orthodox.orthodoxapp.account;
 
 import com.orthodox.orthodoxapp.auth.AuthException;
+import com.orthodox.orthodoxapp.auth.AuthenticatorService;
 import com.orthodox.orthodoxapp.auth.SentCode;
 import com.orthodox.orthodoxapp.auth.SignedInUser;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +36,10 @@ import org.springframework.web.multipart.MultipartFile;
  *   POST   /api/account/email/verify     -> check that code
  *   POST   /api/account/phone/send-code  -> text a code to verify your phone
  *   POST   /api/account/phone/verify     -> check that code
- *   PUT    /api/account/two-factor       -> NONE, EMAIL or SMS
+ *   PUT    /api/account/two-factor       -> NONE, EMAIL or SMS (or keep AUTHENTICATOR)
+ *   POST   /api/account/authenticator/setup         -> a new secret and QR code contents
+ *   POST   /api/account/authenticator/confirm       -> the app's first code: switches it on, gives backup codes
+ *   POST   /api/account/authenticator/backup-codes  -> 10 new backup codes (the old ones stop working)
  *
  * @AuthenticationPrincipal gives us the SignedInUser from the session, so a
  * person can only ever see and change their OWN account.
@@ -57,12 +63,22 @@ public class AccountController {
     public record TwoFactorRequest(TwoFactorMethod method) {
     }
 
+    /** The account after turning the app on, and its backup codes (shown once). */
+    public record AuthenticatorOn(AccountView account, List<String> backupCodes) {
+    }
+
+    public record BackupCodes(List<String> backupCodes) {
+    }
+
     private final AccountService accountService;
     private final ProfilePhotoService photoService;
+    private final AuthenticatorService authenticator;
 
-    public AccountController(AccountService accountService, ProfilePhotoService photoService) {
+    public AccountController(AccountService accountService, ProfilePhotoService photoService,
+                             AuthenticatorService authenticator) {
         this.accountService = accountService;
         this.photoService = photoService;
+        this.authenticator = authenticator;
     }
 
     @GetMapping
@@ -143,5 +159,26 @@ public class AccountController {
     @PutMapping("/two-factor")
     public AccountView setTwoFactor(@AuthenticationPrincipal SignedInUser me, @RequestBody TwoFactorRequest body) {
         return AccountView.from(accountService.setTwoFactor(me.id(), body.method()));
+    }
+
+    // ----- Authenticator app (see AuthenticatorService) -----
+
+    /** HttpSession: the new secret waits in your session until confirm. */
+    @PostMapping("/authenticator/setup")
+    public AuthenticatorService.Setup startAuthenticator(@AuthenticationPrincipal SignedInUser me, HttpSession session) {
+        return authenticator.startSetup(accountService.get(me.id()), session);
+    }
+
+    @PostMapping("/authenticator/confirm")
+    public AuthenticatorOn confirmAuthenticator(@AuthenticationPrincipal SignedInUser me, HttpSession session,
+                                                @RequestBody CodeRequest body) {
+        AppUser user = accountService.get(me.id());
+        List<String> codes = authenticator.confirmSetup(user, session, body.code());
+        return new AuthenticatorOn(AccountView.from(user), codes);
+    }
+
+    @PostMapping("/authenticator/backup-codes")
+    public BackupCodes newBackupCodes(@AuthenticationPrincipal SignedInUser me) {
+        return new BackupCodes(authenticator.newBackupCodes(accountService.get(me.id())));
     }
 }

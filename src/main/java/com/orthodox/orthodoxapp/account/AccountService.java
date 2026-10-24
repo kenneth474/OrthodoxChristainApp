@@ -1,10 +1,12 @@
 package com.orthodox.orthodoxapp.account;
 
 import com.orthodox.orthodoxapp.auth.AuthException;
+import com.orthodox.orthodoxapp.auth.AuthenticatorService;
 import com.orthodox.orthodoxapp.auth.CodePurpose;
 import com.orthodox.orthodoxapp.auth.PhoneNumbers;
 import com.orthodox.orthodoxapp.auth.SentCode;
 import com.orthodox.orthodoxapp.auth.VerificationCodeService;
+import com.orthodox.orthodoxapp.notify.CodeChannels;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.MonthDay;
@@ -23,10 +25,15 @@ public class AccountService {
 
     private final AppUserRepository users;
     private final VerificationCodeService codes;
+    private final CodeChannels channels;
+    private final AuthenticatorService authenticator;
 
-    public AccountService(AppUserRepository users, VerificationCodeService codes) {
+    public AccountService(AppUserRepository users, VerificationCodeService codes,
+                          CodeChannels channels, AuthenticatorService authenticator) {
         this.users = users;
         this.codes = codes;
+        this.channels = channels;
+        this.authenticator = authenticator;
     }
 
     /** Loads an account. 401 if it no longer exists (e.g. the database was reset). */
@@ -92,13 +99,18 @@ public class AccountService {
         user.setPhoneNumber(newPhone);
         user.setPhoneVerified(false);
         users.save(user);
-        return newPhone == null ? SentCode.none() : codes.send(user, CodePurpose.VERIFY_PHONE);
+        // No texts on this server yet: keep the number, verify it later.
+        return newPhone == null || !channels.textAvailable() ? SentCode.none() : codes.send(user, CodePurpose.VERIFY_PHONE);
     }
 
     public SentCode sendEmailCode(Long userId) {
         AppUser user = get(userId);
         if (user.isEmailVerified()) {
             throw new AuthException(HttpStatus.CONFLICT, "Your email is already verified.");
+        }
+        if (!channels.emailAvailable()) {
+            throw new AuthException(HttpStatus.CONFLICT,
+                    "Email isn't set up on this server yet, so we can't send you a code.");
         }
         return codes.send(user, CodePurpose.VERIFY_EMAIL);
     }
@@ -120,6 +132,10 @@ public class AccountService {
         if (user.isPhoneVerified()) {
             throw new AuthException(HttpStatus.CONFLICT, "Your phone number is already verified.");
         }
+        if (!channels.textAvailable()) {
+            throw new AuthException(HttpStatus.CONFLICT,
+                    "Text messages aren't set up on this server yet, so we can't send you a code.");
+        }
         return codes.send(user, CodePurpose.VERIFY_PHONE);
     }
 
@@ -132,8 +148,11 @@ public class AccountService {
     }
 
     /**
-     * Turns two-step verification off, or on by email or text. Codes can only
-     * go somewhere you've proven is yours, or you could lock yourself out.
+     * Turns two-step verification off, or on by email or text. (The
+     * authenticator app is turned on by AuthenticatorService.confirmSetup,
+     * once the app has shown a right code.) Codes can only go somewhere
+     * you've proven is yours, and that this server can really reach, or you
+     * could lock yourself out.
      */
     @Transactional
     public AppUser setTwoFactor(Long userId, TwoFactorMethod method) {
@@ -142,13 +161,24 @@ public class AccountService {
 
         if (chosen != TwoFactorMethod.NONE && !user.hasPassword()) {
             throw new AuthException(HttpStatus.CONFLICT, "Two-step verification protects password sign-in. "
-                    + "You sign in with Google or Apple, which protect your account with their own security.");
+                    + "You sign in with Google, which protects your account with its own security.");
         }
-        if (chosen == TwoFactorMethod.EMAIL && !user.isEmailVerified()) {
-            throw new AuthException(HttpStatus.CONFLICT, "Verify your email address first.");
+        if (chosen == TwoFactorMethod.AUTHENTICATOR && user.getTwoFactorMethod() != TwoFactorMethod.AUTHENTICATOR) {
+            throw new AuthException(HttpStatus.CONFLICT, "Set up your authenticator app first, by scanning its QR code.");
         }
-        if (chosen == TwoFactorMethod.SMS && !user.isPhoneVerified()) {
-            throw new AuthException(HttpStatus.CONFLICT, "Add and verify your phone number first.");
+        if (chosen == TwoFactorMethod.EMAIL && !(user.isEmailVerified() && channels.emailAvailable())) {
+            throw new AuthException(HttpStatus.CONFLICT, channels.emailAvailable()
+                    ? "Verify your email address first."
+                    : "Email codes aren't available on this server yet. Use an authenticator app instead.");
+        }
+        if (chosen == TwoFactorMethod.SMS && !(user.isPhoneVerified() && channels.textAvailable())) {
+            throw new AuthException(HttpStatus.CONFLICT, channels.textAvailable()
+                    ? "Add and verify your phone number first."
+                    : "Text-message codes aren't available on this server yet. Use an authenticator app instead.");
+        }
+        // Leaving the authenticator app: forget its secret and backup codes.
+        if (user.getTwoFactorMethod() == TwoFactorMethod.AUTHENTICATOR && chosen != TwoFactorMethod.AUTHENTICATOR) {
+            authenticator.turnOff(user);
         }
         user.setTwoFactorMethod(chosen);
         return users.save(user);

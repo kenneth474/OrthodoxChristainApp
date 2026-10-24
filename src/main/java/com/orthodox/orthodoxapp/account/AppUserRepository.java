@@ -24,6 +24,4 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     boolean existsByEmail(String email);
 
     Optional<AppUser> findByGoogleId(String googleId);
-
-    Optional<AppUser> findByAppleId(String appleId);
 }

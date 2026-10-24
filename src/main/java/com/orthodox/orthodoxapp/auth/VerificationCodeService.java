@@ -4,6 +4,7 @@ import com.orthodox.orthodoxapp.account.AppUser;
 import com.orthodox.orthodoxapp.account.TwoFactorMethod;
 import com.orthodox.orthodoxapp.notify.EmailSender;
 import com.orthodox.orthodoxapp.notify.SmsSender;
+import com.orthodox.orthodoxapp.notify.TwilioVerify;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
@@ -24,6 +25,11 @@ import org.springframework.transaction.annotation.Transactional;
  *   - a code expires after 10 minutes and allows 5 wrong guesses
  *   - asking for a new code retires the old one, and you must wait 30 seconds
  *     between requests, so nobody can flood an inbox or phone
+ *
+ * Codes by text go through Twilio Verify when it's set up (see TwilioVerify):
+ * Twilio makes and checks those codes itself. We still keep a row for each
+ * one (marked TWILIO_VERIFY instead of a hash), so the same timing and
+ * wrong-guess rules apply.
  */
 @Service
 public class VerificationCodeService {
@@ -33,18 +39,24 @@ public class VerificationCodeService {
     static final Duration LIFETIME = Duration.ofMinutes(10);
     static final Duration RESEND_WAIT = Duration.ofSeconds(30);
 
+    // Stored instead of a hash when Twilio Verify holds the code. It can't
+    // match anything typed: it isn't a BCrypt hash.
+    static final String TWILIO_VERIFY = "twilio-verify";
+
     private final SecureRandom random = new SecureRandom();
     private final VerificationCodeRepository codes;
     private final PasswordEncoder passwordEncoder;
     private final EmailSender emailSender;
     private final SmsSender smsSender;
+    private final TwilioVerify twilioVerify;
 
     public VerificationCodeService(VerificationCodeRepository codes, PasswordEncoder passwordEncoder,
-                                   EmailSender emailSender, SmsSender smsSender) {
+                                   EmailSender emailSender, SmsSender smsSender, TwilioVerify twilioVerify) {
         this.codes = codes;
         this.passwordEncoder = passwordEncoder;
         this.emailSender = emailSender;
         this.smsSender = smsSender;
+        this.twilioVerify = twilioVerify;
     }
 
     /**
@@ -72,6 +84,19 @@ public class VerificationCodeService {
         // Only the newest code should work, so retire any older ones.
         codes.findByUserIdAndPurposeAndUsedFalse(user.getId(), purpose).forEach(VerificationCode::retire);
 
+        // By text through Twilio Verify: Twilio makes and texts the code.
+        if (byText(user, purpose) && twilioVerify.configured()) {
+            codes.save(new VerificationCode(user.getId(), purpose, TWILIO_VERIFY, now, now.plus(LIFETIME)));
+            try {
+                twilioVerify.start(user.getPhoneNumber());
+            } catch (RuntimeException ex) {
+                log.error("Twilio Verify could not text a {} code to user {}", purpose, user.getId(), ex);
+                throw new AuthException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "We couldn't text your code. Please try again in a moment.");
+            }
+            return new SentCode(PhoneNumbers.mask(user.getPhoneNumber()), false);
+        }
+
         // A random number from 0 to 999999, padded to 6 digits: 42 -> "000042".
         String code = "%06d".formatted(random.nextInt(1_000_000));
         codes.save(new VerificationCode(user.getId(), purpose, passwordEncoder.encode(code), now, now.plus(LIFETIME)));
@@ -98,8 +123,7 @@ public class VerificationCodeService {
                         "That code has expired or was already used. Ask for a new one."));
 
         String typed = submitted == null ? "" : submitted.strip();
-        // passwordEncoder.matches compares the typed code with the stored hash.
-        if (!typed.matches("\\d{6}") || !passwordEncoder.matches(typed, code.getCodeHash())) {
+        if (!typed.matches("\\d{6}") || !isRight(user, code, typed)) {
             code.recordWrongGuess();
             codes.save(code);
             throw new AuthException(HttpStatus.BAD_REQUEST, code.isUsed()
@@ -111,15 +135,35 @@ public class VerificationCodeService {
         codes.save(code);
     }
 
-    // Sends the code by text for phone checks and SMS two-step sign-in,
+    // Twilio's codes are checked by Twilio; ours by comparing with the stored
+    // hash (passwordEncoder.matches).
+    private boolean isRight(AppUser user, VerificationCode code, String typed) {
+        if (!TWILIO_VERIFY.equals(code.getCodeHash())) {
+            return passwordEncoder.matches(typed, code.getCodeHash());
+        }
+        try {
+            return twilioVerify.check(user.getPhoneNumber(), typed);
+        } catch (RuntimeException ex) {
+            log.error("Twilio Verify could not check a code for user {}", user.getId(), ex);
+            throw new AuthException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "We couldn't check your code just now. Please try again in a moment.");
+        }
+    }
+
+    // Codes go by text for phone checks and text-message two-step sign-in,
     // otherwise by email.
+    private static boolean byText(AppUser user, CodePurpose purpose) {
+        return purpose == CodePurpose.VERIFY_PHONE
+                || (purpose == CodePurpose.SIGN_IN && user.getTwoFactorMethod() == TwoFactorMethod.SMS);
+    }
+
+    // Our own code (no Twilio Verify): sent by email, or by the development
+    // text sender, which prints it in the terminal.
     private SentCode deliver(AppUser user, CodePurpose purpose, String code) {
         String message = "Your Orthodox Daily code is " + code + ". It expires in 10 minutes. "
                 + "If you didn't ask for it, you can ignore this message.";
-        boolean byText = purpose == CodePurpose.VERIFY_PHONE
-                || (purpose == CodePurpose.SIGN_IN && user.getTwoFactorMethod() == TwoFactorMethod.SMS);
         try {
-            if (byText) {
+            if (byText(user, purpose)) {
                 smsSender.send(user.getPhoneNumber(), message);
                 return new SentCode(PhoneNumbers.mask(user.getPhoneNumber()), smsSender.developmentMode());
             }

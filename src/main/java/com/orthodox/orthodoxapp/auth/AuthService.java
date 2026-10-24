@@ -20,8 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
  * AuthService: the business rules for creating accounts and signing in.
  *
  * AuthController handles the web requests; this class decides whether a
- * password is right, when to lock an account, and how a Google or Apple
- * sign-in connects to an account.
+ * password is right, when to lock an account, and how a Google sign-in
+ * connects to an account.
  */
 @Service
 public class AuthService {
@@ -118,31 +118,25 @@ public class AuthService {
     }
 
     /**
-     * Finds or creates the account for someone who signed in with Google or Apple.
+     * Finds or creates the account for someone who signed in with Google.
      *
-     *   1. Already used this Google/Apple account here? Use the same AppUser.
+     *   1. Already used this Google account here? Use the same AppUser.
      *   2. Otherwise, an account with the same (verified) email? Link to it.
      *   3. Otherwise, create a new account.
      *
-     * @param provider      "google" or "apple"
-     * @param subject       the provider's permanent ID for this person
-     * @param emailVerified whether the provider has confirmed the email
+     * @param subject       Google's permanent ID for this person
+     * @param emailVerified whether Google has confirmed the email
      */
     @Transactional
-    public AppUser signInWithProvider(String provider, String subject, String email,
-                                      boolean emailVerified, String name) {
-        Optional<AppUser> linked = switch (provider) {
-            case "google" -> users.findByGoogleId(subject);
-            case "apple" -> users.findByAppleId(subject);
-            default -> throw new IllegalArgumentException("Unknown sign-in provider: " + provider);
-        };
+    public AppUser signInWithGoogle(String subject, String email, boolean emailVerified, String name) {
+        Optional<AppUser> linked = users.findByGoogleId(subject);
         if (linked.isPresent()) {
             return linked.get();
         }
 
         if (email == null || !emailVerified) {
             throw new AuthException(HttpStatus.BAD_REQUEST,
-                    "Your " + provider + " account didn't share a verified email address.");
+                    "Your Google account didn't share a verified email address.");
         }
         String cleanEmail = normalizeEmail(email);
 
@@ -152,20 +146,18 @@ public class AuthService {
         if (user.getId() != null && !user.isEmailVerified()) {
             // An existing account whose email was never proven. Anyone can sign
             // up with someone else's email and wait for the real owner to arrive
-            // (a "pre-hijacking" attack). Google/Apple have now proven who owns
-            // this email, so we remove the unproven password and settings.
+            // (a "pre-hijacking" attack). Google has now proven who owns this
+            // email, so we remove the unproven password and settings.
             user.setPasswordHash(null);
             user.setPhoneNumber(null);
             user.setPhoneVerified(false);
             user.setTwoFactorMethod(TwoFactorMethod.NONE);
+            user.setTotpSecret(null);
+            user.setTotpLastStep(null);
         }
 
         user.setEmailVerified(true);
-        if (provider.equals("google")) {
-            user.setGoogleId(subject);
-        } else {
-            user.setAppleId(subject);
-        }
+        user.setGoogleId(subject);
         return users.save(user);
     }
 
@@ -174,7 +166,7 @@ public class AuthService {
         return email == null ? "" : email.strip().toLowerCase(Locale.ROOT);
     }
 
-    // Apple doesn't share a name after the first sign-in, so fall back to the email.
+    // If Google shares no name, use the start of the email ("anna" for anna@example.com).
     private static String nameOrDefault(String name, String email) {
         if (name != null && !name.isBlank()) {
             return name.strip();

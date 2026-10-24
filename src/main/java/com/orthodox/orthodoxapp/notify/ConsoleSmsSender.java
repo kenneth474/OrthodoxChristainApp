@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * ConsoleSmsSender: development mode. Prints text messages in the terminal
- * instead of sending them. Used until Twilio is set in secrets.properties.
+ * instead of sending them. Used until Twilio Verify is set up (TwilioVerify).
  */
 public class ConsoleSmsSender implements SmsSender {
 

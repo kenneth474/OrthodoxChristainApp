@@ -41,7 +41,7 @@ public class AppUser {
     @Column(nullable = false, unique = true)
     private String email;
 
-    // BCrypt hash of the password, or null for accounts that only use Google/Apple.
+    // BCrypt hash of the password, or null for accounts that only use Google.
     private String passwordHash;
 
     @Column(nullable = false)
@@ -59,16 +59,20 @@ public class AppUser {
     @Column(nullable = false)
     private TwoFactorMethod twoFactorMethod = TwoFactorMethod.NONE;
 
-    // The unchanging account IDs Google and Apple give us ("sub" in their tokens).
+    // The unchanging account ID Google gives us ("sub" in its tokens).
     @Column(unique = true)
     private String googleId;
-
-    @Column(unique = true)
-    private String appleId;
 
     // Protection against password guessing: see recordFailedSignIn below.
     private int failedSignIns;
     private Instant lockedUntil;
+
+    // The authenticator app (see AuthenticatorService and Totp): the secret
+    // shared with the app, the last 30-second step whose code was used (so a
+    // code can't be used twice), and wrong codes in a row.
+    private String totpSecret;
+    private Long totpLastStep;
+    private int failedCodes;
 
     // ----- Profile and preferences (added in Session 2) -----
     // These columns were added to a table that may already have rows, so
@@ -112,7 +116,7 @@ public class AppUser {
 
     // ----- Behaviour -----
 
-    /** False for accounts that only sign in with Google or Apple. */
+    /** False for accounts that only sign in with Google. */
     public boolean hasPassword() {
         return passwordHash != null;
     }
@@ -137,6 +141,23 @@ public class AppUser {
     public void recordSuccessfulSignIn() {
         failedSignIns = 0;
         lockedUntil = null;
+    }
+
+    /**
+     * Counts a wrong two-step code. Kept apart from wrong passwords, because
+     * someone who knows the password must not be able to reset this count by
+     * signing in again and again.
+     */
+    public void recordFailedCode(Instant now, int maxAttempts, Duration lockTime) {
+        failedCodes++;
+        if (failedCodes >= maxAttempts) {
+            lockedUntil = now.plus(lockTime);
+            failedCodes = 0;
+        }
+    }
+
+    public void clearFailedCodes() {
+        failedCodes = 0;
     }
 
     // ----- Getters and setters -----
@@ -166,8 +187,11 @@ public class AppUser {
     public String getGoogleId() { return googleId; }
     public void setGoogleId(String googleId) { this.googleId = googleId; }
 
-    public String getAppleId() { return appleId; }
-    public void setAppleId(String appleId) { this.appleId = appleId; }
+    public String getTotpSecret() { return totpSecret; }
+    public void setTotpSecret(String totpSecret) { this.totpSecret = totpSecret; }
+
+    public Long getTotpLastStep() { return totpLastStep; }
+    public void setTotpLastStep(Long totpLastStep) { this.totpLastStep = totpLastStep; }
 
     public Instant getCreatedAt() { return createdAt; }
 

@@ -48,13 +48,18 @@ public class NotifyConfig {
         return new SmtpEmailSender(realMail, from);
     }
 
+    /**
+     * Codes by text go through Twilio Verify when it's set up (TwilioVerify
+     * makes and texts its own codes). This sender is only for development:
+     * it prints the codes we make ourselves in the terminal.
+     */
     @Bean
     SmsSender smsSender(TwilioProperties twilio) {
-        if (!twilio.configured()) {
+        if (twilio.configured()) {
+            log.info("Text messages: codes are texted through Twilio Verify.");
+        } else {
             log.info("Text messages: development mode. Codes will be printed in this terminal.");
-            return new ConsoleSmsSender();
         }
-        log.info("Text messages: sending real texts through Twilio from {}", twilio.fromNumber());
-        return new TwilioSmsSender(twilio);
+        return new ConsoleSmsSender();
     }
 }
