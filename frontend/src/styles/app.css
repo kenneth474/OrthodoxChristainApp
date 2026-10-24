@@ -462,3 +462,11 @@ code.secret { font-family: ui-monospace, Menlo, Consolas, monospace; letter-spac
   font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.95rem; background: var(--bg);
 }
 button.primary-inline { background: var(--button-bg); border-color: var(--button-bg); color: var(--button-ink); }
+
+/* ---- "A new version of the app is ready" (components/UpdateBanner.tsx) ---- */
+.update-banner {
+  position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 10px); transform: translateX(-50%); z-index: 40;
+  width: min(440px, calc(100% - 24px)); padding: 10px 14px; border-radius: 12px;
+  background: var(--button-bg); border-color: var(--button-bg); color: var(--button-ink);
+  font-size: 0.9rem; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
