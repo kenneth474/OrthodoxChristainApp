@@ -508,6 +508,18 @@
       ],
       "labels": ["user story", "content"],
       "milestone": "Phase 4: Content"
+    },
+    {
+      "title": "Two-step verification with an authenticator app",
+      "story": "As a user, I want my second sign-in step to use an authenticator app, so that my account is protected without depending on email or text messages.",
+      "criteria": [
+        "Set up by scanning a QR code (or typing a key) in Profile",
+        "Works with Google Authenticator, Microsoft Authenticator, the iPhone Passwords app and others",
+        "One-time backup codes in case the phone is lost",
+        "Email and text codes are only offered where the server can really send them"
+      ],
+      "labels": ["user story", "accounts"],
+      "milestone": "Phase 3: Accounts"
     }
   ]
 }
