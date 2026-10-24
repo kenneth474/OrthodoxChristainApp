@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.ColumnDefault;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -51,7 +52,13 @@ public class AppUser {
     private String phoneNumber;
 
     // True once the person has proved they own the email / phone with a code.
+    // @ColumnDefault: the value the database gives existing rows when a
+    // column is added later. A number or true/false column must always
+    // have one, or adding it to a table that already has accounts fails
+    // (that broke signing in on 2026-10-24; EntityColumnsTest checks it).
+    @ColumnDefault("false")
     private boolean emailVerified;
+    @ColumnDefault("false")
     private boolean phoneVerified;
 
     // @Enumerated(STRING) saves the name ("EMAIL"), which stays readable in the table.
@@ -64,6 +71,7 @@ public class AppUser {
     private String googleId;
 
     // Protection against password guessing: see recordFailedSignIn below.
+    @ColumnDefault("0")
     private int failedSignIns;
     private Instant lockedUntil;
 
@@ -72,6 +80,7 @@ public class AppUser {
     // code can't be used twice), and wrong codes in a row.
     private String totpSecret;
     private Long totpLastStep;
+    @ColumnDefault("0")
     private int failedCodes;
 
     // ----- Profile and preferences (added in Session 2) -----

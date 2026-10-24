@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import org.hibernate.annotations.ColumnDefault;
 
 /**
  * BackupCode: one of the ten one-time codes you get when you turn on an
@@ -27,6 +28,7 @@ public class BackupCode {
     @Column(nullable = false)
     private String codeHash;
 
+    @ColumnDefault("false")
     private boolean used;
 
     protected BackupCode() {

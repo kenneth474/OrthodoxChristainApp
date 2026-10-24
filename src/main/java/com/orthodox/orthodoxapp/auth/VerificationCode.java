@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import org.hibernate.annotations.ColumnDefault;
 import java.time.Instant;
 
 /**
@@ -43,9 +44,11 @@ public class VerificationCode {
     @Column(nullable = false)
     private Instant expiresAt;
 
+    @ColumnDefault("0")
     private int attempts;
 
     // True once the code has been used, replaced by a newer code, or guessed wrong too often.
+    @ColumnDefault("false")
     private boolean used;
 
     protected VerificationCode() {
